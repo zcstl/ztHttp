@@ -34,6 +34,7 @@ int startUp(in_port_t port){
 }
 
 int main(int argc, char* argv[]){
+	int err;
 	int s_sock=-1, c_sock=-1;//0应该有用	
 	in_port_t s_port=-1;//端口号0？
 	s_sock=startUp(s_port);
@@ -42,6 +43,7 @@ int main(int argc, char* argv[]){
 	while(1){
 		if((c_sock=accept(s_sock, nullptr, nullptr)) == -1)
 			ERRORDIE("main, accpet;");
+		create_pthread();
 	}
 	close(s_sock);
 	return 0;		
