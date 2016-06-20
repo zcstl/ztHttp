@@ -12,7 +12,8 @@ using namespace std;
 
 class ThreadAbstractClass{
 	public:
-		virtual void* run(void);
+		//virtual void* run();//(void)应该需要传参数
+		void* run();//(void)应该需要传参数
 };
 
 
@@ -31,7 +32,7 @@ class ThreadPool:public ThreadPoolAbstractClass{
 		//此处mtx，cond和isCanceled可执行默认初始化，然后在startUp里进行赋值
 		ThreadPool(int threadsNumber):isWaited(0), isCancelled(0), threads(threadsNumber){}
 		//ThreadPool:threads(threadsNumber), isFree(isFree)(int threadsNumber, bool isFree){}
-		~ThreadPool(){}
+		~ThreadPool(){}//析构函数的分析，指针，内存释放，此处默认即可
 		int startUp();//开启pool，线程阻塞等待消息
 		int endPool();//等待正在执行的T执行结束，剩余消息不再处理，关闭线程池的线程
 		int waitPool();//当不再接收请求时调用该函数，阻塞调用线程直到消息队列都被处理完
@@ -47,7 +48,8 @@ class ThreadPool:public ThreadPoolAbstractClass{
 
 		};
 		*/
-		int runThread();
+		//int runThread();
+		static void* runThread(void*);//pthread_create参数要求
 		vector<pthread_t> threads;//该类的实现细节
 		/*违反DIP*/
 		//list<DataNode> nodes;

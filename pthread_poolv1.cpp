@@ -1,39 +1,48 @@
-#include<"pthread_poolv1.h">
-#include<stdlib>
-
+#include"pthread_poolv1.h"
+#include<iostream>
+#include<unistd.h>
 using namespace std;
+
 
 int ThreadPool::startUp(){
 	int err;
 	pthread_mutex_init(&mtx, NULL);
 	pthread_cond_init(&cond, NULL);
 	for(auto aThread: threads){
-		if(err=pthread_create(aThread, NULL, runPthread, NULL) != 0)
-			ERROEDIE("pthread pool create threads error", -1);
+		if(err=pthread_create(&aThread, NULL, &ThreadPool::runThread, this) != 0)//&funcName,  g++使用成员函数地址需指明作用域,   &thread
+			ERROR_DIE("pthread pool create threads error", -1);
 	}
 	return 0;
 }
 
-int ThreadPool::runThread(){
+//void*参数
+void* ThreadPool::runThread(void* arg){
+	//this=(ThreadPool*)arg;在非静态成员函数里不能使用this关键字
+	ThreadPool* This=(ThreadPool*)arg;
 	int err;
-	while(!isCancelled){
-		pthread_mutex_lock(&mtx);
-		if(!tasks.size())
-			if(err=pthread_cond_wait(&cond, &mtx)!=0)
+	while(!This->isCancelled){
+		pthread_mutex_lock(&This->mtx);
+		if(!This->tasks.size())
+			if(err=pthread_cond_wait(&This->cond, &This->mtx)!=0)
 				ERROR_DIE("pthread_cond_wait error",-1);
-		if(isCancelled==1){
-			pthread_mutex_unlock(&mtx);
-			if(err=pthread_cond_broadcast(&cond)!=0)
+		if(This->isCancelled==1){
+			pthread_mutex_unlock(&This->mtx);
+			if(err=pthread_cond_broadcast(&This->cond)!=0)
 				ERROR_DIE("pthread_cond_wait error", -1);
 			MSG_PRINT("Thread end!");
 			return 0;
 		}
-		ThreadAbstractClass task=tasks.back();
-		tasks.pop_back();
-		pthread_mutex_unlock(&mtx);
-		tasks.run();
+		ThreadAbstractClass tmp=This->tasks.back();
+		ThreadAbstractClass* task=&tmp;
+		This->tasks.pop_back();
+		pthread_mutex_unlock(&This->mtx);
+		task->run();//task为抽象类类型，其run为纯虚函数，没有vtable; 把抽象类的run改为普通虚函数并提供实现，此处编译通过，why
 	}
-	return 0;
+	return (void*)0;
+}
+
+void* ThreadAbstractClass::run(){
+	return (void*)0;
 }
 
 int ThreadPool::enqueue(ThreadAbstractClass aTask){
@@ -66,9 +75,9 @@ int ThreadPool::waitPool(){
 	}
 }
 
-int ThreadPool::restart(){
+int ThreadPool::reStart(){
 	if(isCancelled==1){
-		MSGPRINT("Thread pool is being end, can not restart!")	
+		MSG_PRINT("Thread pool is being end, can not restart!")	
 		return -1;
 	}
 	isWaited=1;
@@ -82,9 +91,9 @@ int ThreadPool::endPool(){
 	isCancelled=1;
 	if(err=pthread_cond_broadcast(&cond) !=0 )
 		ERROR_DIE("pthread_cond_broadcast error", -1);//isCancelled 为1，此时broadcast将引起连锁broadcast，使得T陆续返回
-	pthread_mutex_destory(&mtx);
-	pthread_cond_destory(&cond);
-	for(auto aThread::threads)
-		pthread_join(&aThread, NULL);//默认T的终止状态会保存到调用join
+	pthread_mutex_destroy(&mtx);
+	pthread_cond_destroy(&cond);
+	for(auto aThread:threads);//一个：而不是两个，::是域作用符
+		//pthread_join(&aThread, NULL);//默认T的终止状态会保存到调用join
 	return 0;		
 }
