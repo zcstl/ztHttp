@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <netinet/in.h>
+#include "pthread_poolv1.h"
 //
 #include <iostream>
 #define ERRORDIE(str) {cout<<"Error in: "<<str<<endl; exit(-1);}
@@ -43,7 +44,7 @@ int main(int argc, char* argv[]){
 	while(1){
 		if((c_sock=accept(s_sock, nullptr, nullptr)) == -1)
 			ERRORDIE("main, accpet;");
-		create_pthread();
+		//pthread_create();
 	}
 	close(s_sock);
 	return 0;		
