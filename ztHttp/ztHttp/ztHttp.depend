@@ -1,0 +1,28 @@
+# depslib dependency file v1.0
+1466477422 source:/home/zcsubuntu/zcsUbuntu/studyProject/ztHttp/httpTest.cpp
+	<sys/socket.h>
+	<sys/types.h>
+	<stdint.h>
+	<unistd.h>
+	<netinet/in.h>
+	"pthread_poolv1.h"
+	<iostream>
+
+1466477338 /home/zcsubuntu/zcsUbuntu/studyProject/ztHttp/pthread_poolv1.h
+	<pthread.h>
+	<vector>
+	<list>
+
+1466476091 source:/home/zcsubuntu/zcsUbuntu/studyProject/ztHttp/pthread_poolv1.cpp
+	"pthread_poolv1.h"
+	<iostream>
+	<unistd.h>
+
+1466477406 source:/home/zcsubuntu/zcsUbuntu/studyProject/ztHttp/testPthreadPool.cpp
+	"pthread_poolv1.h"
+	<iostream>
+	<unistd.h>
+
+1466477453 source:/home/zcsubuntu/zcsUbuntu/studyProject/ztHttp/ztHttp/ztHttp/main.cpp
+	<iostream>
+

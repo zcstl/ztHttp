@@ -29,17 +29,17 @@ int startUp(in_port_t port){
 		ERRORDIE("startUp bind;");
 	if(port==0);//获取动态分配的端口号
 	if(listen(s_sock, 100)==-1)
-		ERRORDIE("startUp listen");	
+		ERRORDIE("startUp listen");
 	return s_sock;
 
 }
 
-int main(int argc, char* argv[]){
+int main1(int argc, char* argv[]){
 	int err;
-	int s_sock=-1, c_sock=-1;//0应该有用	
+	int s_sock=-1, c_sock=-1;//0应该有用
 	in_port_t s_port=-1;//端口号0？
 	s_sock=startUp(s_port);
-	
+
 	cout<<"Test server is running on port: "<<s_port<<endl;
 	while(1){
 		if((c_sock=accept(s_sock, nullptr, nullptr)) == -1)
@@ -47,5 +47,5 @@ int main(int argc, char* argv[]){
 		//pthread_create();
 	}
 	close(s_sock);
-	return 0;		
+	return 0;
 }

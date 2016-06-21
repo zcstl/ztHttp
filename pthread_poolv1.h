@@ -13,7 +13,7 @@ using namespace std;
 class ThreadAbstractClass{
 	public:
 		//virtual void* run();//(void)应该需要传参数
-		void* run();//(void)应该需要传参数
+		virtual void* run();//(void)应该需要传参数
 };
 
 
@@ -23,7 +23,7 @@ class ThreadPoolAbstractClass{
 		virtual int waitPool()=0;
 		virtual int reStart()=0;
 		virtual int endPool()=0;
-		virtual int enqueue(ThreadAbstractClass)=0;
+		virtual int enqueue(ThreadAbstractClass*)=0;
 };
 
 class ThreadPool:public ThreadPoolAbstractClass{
@@ -38,7 +38,7 @@ class ThreadPool:public ThreadPoolAbstractClass{
 		int waitPool();//当不再接收请求时调用该函数，阻塞调用线程直到消息队列都被处理完
 		//int enqueue(PoolMsg msg, func operation, bool isFree);//	消息队列入队，需指明消息和消息处理函数
 		int reStart();
-		int enqueue(ThreadAbstractClass athread);
+		int enqueue(ThreadAbstractClass* athread);
 	private:
 		/*
 		struct DataNode{
@@ -53,7 +53,7 @@ class ThreadPool:public ThreadPoolAbstractClass{
 		vector<pthread_t> threads;//该类的实现细节
 		/*违反DIP*/
 		//list<DataNode> nodes;
-		list<ThreadAbstractClass> tasks;
+		list<ThreadAbstractClass*> tasks;
 		/*
 		list<PoolMsg> msgs;//
 		list<func> funcs;

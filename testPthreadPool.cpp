@@ -19,21 +19,26 @@ int main(int argc, char* argv[]){
 	MockThread t2(2);
 	MockThread t3(3);
 	MockThread t4(4);
-	ThreadPool tp(2);
-	tp.startUp();
-	tp.enqueue(t1);
-	tp.enqueue(t2);
-	tp.enqueue(t3);
-	tp.enqueue(t4);
-	tp.waitPool();
-	tp.enqueue(t1);
-	tp.enqueue(t1);
-	tp.reStart();
-	tp.enqueue(t1);
-	tp.enqueue(t2);
-	tp.enqueue(t3);
-	tp.enqueue(t4);
-	tp.endPool();
-	
-	
+	ThreadPool* tp=new ThreadPool(2);
+	tp->startUp();
+	MSG_PRINT("1\n");
+	tp->enqueue(&t1);
+	tp->enqueue(&t2);
+	tp->enqueue(&t3);
+	tp->enqueue(&t4);
+	MSG_PRINT("2\n");
+	tp->waitPool();
+	tp->enqueue(&t1);
+	tp->enqueue(&t1);
+	tp->reStart();
+	MSG_PRINT("3\n");
+	tp->enqueue(&t1);
+	tp->enqueue(&t2);
+	tp->enqueue(&t3);
+	tp->enqueue(&t4);
+	tp->endPool();
+	MSG_PRINT("4\n");
+	sleep(5000);
+	delete tp;
+	return 0;
 }
