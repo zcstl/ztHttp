@@ -5,6 +5,7 @@
 		<Option title="ztHttp" />
 		<Option pch_mode="2" />
 		<Option compiler="gcc" />
+		<Option virtualFolders="ztHttp/ztHttp/;" />
 		<Build>
 			<Target title="Debug">
 				<Option output="bin/Debug/ztHttp" prefix_auto="1" extension_auto="1" />
@@ -32,7 +33,14 @@
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 		</Compiler>
+		<Unit filename="../../httpTest.cpp" />
+		<Unit filename="../../pthread_poolv1.cpp" />
+		<Unit filename="../../pthread_poolv1.h" />
+		<Unit filename="../../testPthreadPool.cpp" />
+		<Unit filename="HttpTaskThread.h" />
 		<Unit filename="main.cpp" />
+		<Unit filename="printMsg.h" />
+		<Unit filename="test.cpp" />
 		<Extensions>
 			<code_completion />
 			<debugger />

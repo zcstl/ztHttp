@@ -1,10 +1,9 @@
 #include<pthread.h>
 #include<vector>
 #include<list>
-#ifndef _PTHREAD_POOL_V1_
-
-#define ERROR_DIE(str, num) {cout<<"The program die in "<<str<<" exit "<<num<<"!!"<<endl; exit(num);}  //ºêµÄÎ»ÖÃ?
-#define MSG_PRINT(str){cout<<str<<endl;}
+#include "ztHttp/ztHttp/printMsg.h""
+#ifndef PTHREAD_POOL_V1
+#define PTHREAD_POOL_V1
 
 using namespace std;
 //typedef void*(*)(void) func;

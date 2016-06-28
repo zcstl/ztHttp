@@ -68,12 +68,13 @@ int ThreadPool::waitPool(){
 	isWaited=1;
 	int siz=0;
 	while(1){
+        cout<<siz<<endl;
 		pthread_mutex_lock(&mtx);
 		siz=tasks.size();
 		pthread_mutex_unlock(&mtx);
-		MSG_PRINT(siz);
+		MSG_PRINT("$$$$");MSG_PRINT(siz);
 		if(siz!=0)
-			sleep(1000);//ms
+			sleep(1);//ms
 		else
 			return 0;
 	}
@@ -90,6 +91,7 @@ int ThreadPool::reStart(){
 }
 
 int ThreadPool::endPool(){
+    MSG_PRINT("Pthread pool is ending now!");
 	int err;
 	waitPool();
 	isCancelled=1;
@@ -97,8 +99,9 @@ int ThreadPool::endPool(){
 		ERROR_DIE("pthread_cond_broadcast error", -1);//isCancelled 为1，此时broadcast将引起连锁broadcast，使得T陆续返回
 	for(auto aThread:threads);//一个：而不是两个，::是域作用符
 		//pthread_join(&aThread, NULL);//默认T的终止状态会保存到调用join
-	sleep(5000);
+	sleep(5);
 	pthread_mutex_destroy(&mtx);
 	pthread_cond_destroy(&cond);
+	MSG_PRINT("Pthread pool is end!");
 	return 0;
 }
