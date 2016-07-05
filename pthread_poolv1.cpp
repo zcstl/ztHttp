@@ -41,11 +41,11 @@ void* ThreadPool::runThread(void* arg){
 	}
 	return (void*)0;
 }
-
+/*
 void* ThreadAbstractClass::run(){
 	return (void*)0;
 }
-
+*/
 int ThreadPool::enqueue(ThreadAbstractClass* aTask){
 	int err;
 	if(isWaited==1){

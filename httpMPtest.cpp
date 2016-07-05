@@ -14,6 +14,8 @@
 #define ERRORDIE(str) {cout<<"Error in: "<<str<<endl; exit(-1);}
 /*返回对应ipv4和端口的socket，并且已listen*/
 
+
+
 using namespace std;
 
 int startUp(int);
@@ -36,34 +38,42 @@ int startUp(in_port_t port){
 
 }
 
+auto &a=42;
+
 int main(int argc, char* argv[]){
 	int err;
 	int s_sock=-1, c_sock=-1;//0应该有用
-	in_port_t s_port=-1;//端口号0？
+	in_port_t s_port=8080;//端口号0？
 	s_sock=startUp(s_port);
 
-	//	
+	//
 	short count=2;
-	vector<HttpEventMultiplex> httpEvs;
+	//reactor
+	vector<HttpEventMultiplex*> httpEvs;
 	for(int i=0; i<count; ++i)
 		httpEvs.push_back(new HttpEventMultiplex);
-	vector<HttpTasks> httpTasks;
+    //
+	vector<HttpTasks*> httpTasks;
 	for(int i=0; i<count; ++i)
 		httpTasks.push_back(new HttpTasks(httpEvs[i]));
 	ThreadPool tp(2);
-	for(int i=0; i<count; ++i)
+	tp.startUp();//开启后才能入队
+    for(int i=0; i<count; ++i)
 		tp.enqueue(httpTasks[i]);
-	tp.startUp();
 	cout<<"Test server is running on port: "<<s_port<<endl;
 	int times=0;
 	while(1){
-		if((c_sock=accept(s_sock, nullptr, nullptr)) == -1)
-			ERRORDIE("main, accpet;");
+		//if((c_sock=accept(s_sock, nullptr, nullptr)) == -1)
+		//	ERRORDIE("main, accpet;");
 		//分配任务给每个县城i
-		HttpEvent* htev=new HttpEvent(c_sock);
-		httpEvs[times++%count]->register_handler(htev); 
+		//HttpEvent* htev=new HttpEvent(c_sock);
+		MSG_PRINT("begin: ");MSG_PRINT(times);
+		EventHandler* htev=new HttpEvent(c_sock);
+		sleep(1);
+		httpEvs[times++%count]->register_handler(htev);
 	}
 	close(s_sock);
-	//delete 
+	//delete
 	return 0;
 }
+

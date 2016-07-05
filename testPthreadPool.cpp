@@ -1,6 +1,7 @@
 #include "pthread_poolv1.h"
 #include <iostream>
 #include <unistd.h>
+/*
 class MockThread:public ThreadAbstractClass{
 	public:
 		MockThread(int i):a(i){}
@@ -14,7 +15,7 @@ class MockThread:public ThreadAbstractClass{
 		int a;
 };
 
-int main1(int argc, char* argv[]){
+int main(int argc, char* argv[]){
 	MockThread t1(1);
 	MockThread t2(2);
 	MockThread t3(3);
@@ -42,7 +43,7 @@ int main1(int argc, char* argv[]){
 	delete tp;
 	return 0;
 }
-
+*/
 
 /*
 int main(){

@@ -16,7 +16,7 @@ using namespace std;
 
 int startUp(int);
 
-
+/*
 int startUp(in_port_t port){
 	int s_sock=-1;
 	if((s_sock=socket(AF_INET, SOCK_STREAM, 0))==-1)//0
@@ -36,6 +36,7 @@ int startUp(in_port_t port){
 
 //extern int test();
 
+
 int main(int argc, char* argv[]){
 	int err;
 	int s_sock=-1, c_sock=-1;//0应该有用
@@ -52,5 +53,5 @@ int main(int argc, char* argv[]){
 	return 0;
 }
 
-
+*/
 

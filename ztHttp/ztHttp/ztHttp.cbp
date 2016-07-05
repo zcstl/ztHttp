@@ -33,6 +33,9 @@
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 		</Compiler>
+		<Unit filename="../../Event.cpp" />
+		<Unit filename="../../Event.h" />
+		<Unit filename="../../httpMPtest.cpp" />
 		<Unit filename="../../httpTest.cpp" />
 		<Unit filename="../../pthread_poolv1.cpp" />
 		<Unit filename="../../pthread_poolv1.h" />

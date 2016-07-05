@@ -12,7 +12,7 @@ using namespace std;
 class ThreadAbstractClass{
 	public:
 		//virtual void* run();//(void)应该需要传参数
-		virtual void* run();//(void)应该需要传参数
+		virtual void* run()=0;//(void)应该需要传参数
 };
 
 
