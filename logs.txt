@@ -1,0 +1,7 @@
+test.cpp: In function ‘void testArray(int*)’:
+test.cpp:36:5: error: ‘TTT’ was not declared in this scope
+     TTT tt;
+     ^
+test.cpp:36:9: error: expected ‘;’ before ‘tt’
+     TTT tt;
+         ^

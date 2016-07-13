@@ -1,0 +1,253 @@
+testHeap.cpp: In function ‘int main()’:
+testHeap.cpp:8:45: error: found ‘:’ in nested-name-specifier, expected ‘::’
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                             ^
+testHeap.cpp:14:38: note: in expansion of macro ‘PRINT’
+   std::make_heap (v.begin(),v.end());PRINT(v);
+                                      ^
+testHeap.cpp:8:43: error: ‘it’ has not been declared
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                           ^
+testHeap.cpp:14:38: note: in expansion of macro ‘PRINT’
+   std::make_heap (v.begin(),v.end());PRINT(v);
+                                      ^
+testHeap.cpp:8:47: error: expected ‘;’ before ‘)’ token
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                               ^
+testHeap.cpp:14:38: note: in expansion of macro ‘PRINT’
+   std::make_heap (v.begin(),v.end());PRINT(v);
+                                      ^
+testHeap.cpp:8:69: error: expected primary-expression before ‘}’ token
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                                                     ^
+testHeap.cpp:14:38: note: in expansion of macro ‘PRINT’
+   std::make_heap (v.begin(),v.end());PRINT(v);
+                                      ^
+testHeap.cpp:8:69: error: expected ‘)’ before ‘}’ token
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                                                     ^
+testHeap.cpp:14:38: note: in expansion of macro ‘PRINT’
+   std::make_heap (v.begin(),v.end());PRINT(v);
+                                      ^
+testHeap.cpp:8:69: error: expected primary-expression before ‘}’ token
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                                                     ^
+testHeap.cpp:14:38: note: in expansion of macro ‘PRINT’
+   std::make_heap (v.begin(),v.end());PRINT(v);
+                                      ^
+testHeap.cpp:8:69: error: expected ‘;’ before ‘}’ token
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                                                     ^
+testHeap.cpp:14:38: note: in expansion of macro ‘PRINT’
+   std::make_heap (v.begin(),v.end());PRINT(v);
+                                      ^
+testHeap.cpp:8:45: error: found ‘:’ in nested-name-specifier, expected ‘::’
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                             ^
+testHeap.cpp:17:37: note: in expansion of macro ‘PRINT’
+   std::pop_heap (v.begin(),v.end());PRINT(v); v.pop_back();PRINT(v);
+                                     ^
+testHeap.cpp:8:43: error: ‘it’ has not been declared
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                           ^
+testHeap.cpp:17:37: note: in expansion of macro ‘PRINT’
+   std::pop_heap (v.begin(),v.end());PRINT(v); v.pop_back();PRINT(v);
+                                     ^
+testHeap.cpp:8:47: error: expected ‘;’ before ‘)’ token
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                               ^
+testHeap.cpp:17:37: note: in expansion of macro ‘PRINT’
+   std::pop_heap (v.begin(),v.end());PRINT(v); v.pop_back();PRINT(v);
+                                     ^
+testHeap.cpp:8:69: error: expected primary-expression before ‘}’ token
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                                                     ^
+testHeap.cpp:17:37: note: in expansion of macro ‘PRINT’
+   std::pop_heap (v.begin(),v.end());PRINT(v); v.pop_back();PRINT(v);
+                                     ^
+testHeap.cpp:8:69: error: expected ‘)’ before ‘}’ token
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                                                     ^
+testHeap.cpp:17:37: note: in expansion of macro ‘PRINT’
+   std::pop_heap (v.begin(),v.end());PRINT(v); v.pop_back();PRINT(v);
+                                     ^
+testHeap.cpp:8:69: error: expected primary-expression before ‘}’ token
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                                                     ^
+testHeap.cpp:17:37: note: in expansion of macro ‘PRINT’
+   std::pop_heap (v.begin(),v.end());PRINT(v); v.pop_back();PRINT(v);
+                                     ^
+testHeap.cpp:8:69: error: expected ‘;’ before ‘}’ token
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                                                     ^
+testHeap.cpp:17:37: note: in expansion of macro ‘PRINT’
+   std::pop_heap (v.begin(),v.end());PRINT(v); v.pop_back();PRINT(v);
+                                     ^
+testHeap.cpp:8:45: error: found ‘:’ in nested-name-specifier, expected ‘::’
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                             ^
+testHeap.cpp:17:60: note: in expansion of macro ‘PRINT’
+   std::pop_heap (v.begin(),v.end());PRINT(v); v.pop_back();PRINT(v);
+                                                            ^
+testHeap.cpp:8:43: error: ‘it’ has not been declared
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                           ^
+testHeap.cpp:17:60: note: in expansion of macro ‘PRINT’
+   std::pop_heap (v.begin(),v.end());PRINT(v); v.pop_back();PRINT(v);
+                                                            ^
+testHeap.cpp:8:47: error: expected ‘;’ before ‘)’ token
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                               ^
+testHeap.cpp:17:60: note: in expansion of macro ‘PRINT’
+   std::pop_heap (v.begin(),v.end());PRINT(v); v.pop_back();PRINT(v);
+                                                            ^
+testHeap.cpp:8:69: error: expected primary-expression before ‘}’ token
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                                                     ^
+testHeap.cpp:17:60: note: in expansion of macro ‘PRINT’
+   std::pop_heap (v.begin(),v.end());PRINT(v); v.pop_back();PRINT(v);
+                                                            ^
+testHeap.cpp:8:69: error: expected ‘)’ before ‘}’ token
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                                                     ^
+testHeap.cpp:17:60: note: in expansion of macro ‘PRINT’
+   std::pop_heap (v.begin(),v.end());PRINT(v); v.pop_back();PRINT(v);
+                                                            ^
+testHeap.cpp:8:69: error: expected primary-expression before ‘}’ token
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                                                     ^
+testHeap.cpp:17:60: note: in expansion of macro ‘PRINT’
+   std::pop_heap (v.begin(),v.end());PRINT(v); v.pop_back();PRINT(v);
+                                                            ^
+testHeap.cpp:8:69: error: expected ‘;’ before ‘}’ token
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                                                     ^
+testHeap.cpp:17:60: note: in expansion of macro ‘PRINT’
+   std::pop_heap (v.begin(),v.end());PRINT(v); v.pop_back();PRINT(v);
+                                                            ^
+testHeap.cpp:8:45: error: found ‘:’ in nested-name-specifier, expected ‘::’
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                             ^
+testHeap.cpp:20:19: note: in expansion of macro ‘PRINT’
+   v.push_back(99);PRINT(v); std::push_heap (v.begin(),v.end());PRINT(v);
+                   ^
+testHeap.cpp:8:43: error: ‘it’ has not been declared
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                           ^
+testHeap.cpp:20:19: note: in expansion of macro ‘PRINT’
+   v.push_back(99);PRINT(v); std::push_heap (v.begin(),v.end());PRINT(v);
+                   ^
+testHeap.cpp:8:47: error: expected ‘;’ before ‘)’ token
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                               ^
+testHeap.cpp:20:19: note: in expansion of macro ‘PRINT’
+   v.push_back(99);PRINT(v); std::push_heap (v.begin(),v.end());PRINT(v);
+                   ^
+testHeap.cpp:8:69: error: expected primary-expression before ‘}’ token
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                                                     ^
+testHeap.cpp:20:19: note: in expansion of macro ‘PRINT’
+   v.push_back(99);PRINT(v); std::push_heap (v.begin(),v.end());PRINT(v);
+                   ^
+testHeap.cpp:8:69: error: expected ‘)’ before ‘}’ token
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                                                     ^
+testHeap.cpp:20:19: note: in expansion of macro ‘PRINT’
+   v.push_back(99);PRINT(v); std::push_heap (v.begin(),v.end());PRINT(v);
+                   ^
+testHeap.cpp:8:69: error: expected primary-expression before ‘}’ token
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                                                     ^
+testHeap.cpp:20:19: note: in expansion of macro ‘PRINT’
+   v.push_back(99);PRINT(v); std::push_heap (v.begin(),v.end());PRINT(v);
+                   ^
+testHeap.cpp:8:69: error: expected ‘;’ before ‘}’ token
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                                                     ^
+testHeap.cpp:20:19: note: in expansion of macro ‘PRINT’
+   v.push_back(99);PRINT(v); std::push_heap (v.begin(),v.end());PRINT(v);
+                   ^
+testHeap.cpp:8:45: error: found ‘:’ in nested-name-specifier, expected ‘::’
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                             ^
+testHeap.cpp:20:64: note: in expansion of macro ‘PRINT’
+   v.push_back(99);PRINT(v); std::push_heap (v.begin(),v.end());PRINT(v);
+                                                                ^
+testHeap.cpp:8:43: error: ‘it’ has not been declared
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                           ^
+testHeap.cpp:20:64: note: in expansion of macro ‘PRINT’
+   v.push_back(99);PRINT(v); std::push_heap (v.begin(),v.end());PRINT(v);
+                                                                ^
+testHeap.cpp:8:47: error: expected ‘;’ before ‘)’ token
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                               ^
+testHeap.cpp:20:64: note: in expansion of macro ‘PRINT’
+   v.push_back(99);PRINT(v); std::push_heap (v.begin(),v.end());PRINT(v);
+                                                                ^
+testHeap.cpp:8:69: error: expected primary-expression before ‘}’ token
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                                                     ^
+testHeap.cpp:20:64: note: in expansion of macro ‘PRINT’
+   v.push_back(99);PRINT(v); std::push_heap (v.begin(),v.end());PRINT(v);
+                                                                ^
+testHeap.cpp:8:69: error: expected ‘)’ before ‘}’ token
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                                                     ^
+testHeap.cpp:20:64: note: in expansion of macro ‘PRINT’
+   v.push_back(99);PRINT(v); std::push_heap (v.begin(),v.end());PRINT(v);
+                                                                ^
+testHeap.cpp:8:69: error: expected primary-expression before ‘}’ token
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                                                     ^
+testHeap.cpp:20:64: note: in expansion of macro ‘PRINT’
+   v.push_back(99);PRINT(v); std::push_heap (v.begin(),v.end());PRINT(v);
+                                                                ^
+testHeap.cpp:8:69: error: expected ‘;’ before ‘}’ token
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                                                     ^
+testHeap.cpp:20:64: note: in expansion of macro ‘PRINT’
+   v.push_back(99);PRINT(v); std::push_heap (v.begin(),v.end());PRINT(v);
+                                                                ^
+testHeap.cpp:8:45: error: found ‘:’ in nested-name-specifier, expected ‘::’
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                             ^
+testHeap.cpp:23:38: note: in expansion of macro ‘PRINT’
+   std::sort_heap (v.begin(),v.end());PRINT(v);
+                                      ^
+testHeap.cpp:8:43: error: ‘it’ has not been declared
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                           ^
+testHeap.cpp:23:38: note: in expansion of macro ‘PRINT’
+   std::sort_heap (v.begin(),v.end());PRINT(v);
+                                      ^
+testHeap.cpp:8:47: error: expected ‘;’ before ‘)’ token
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                               ^
+testHeap.cpp:23:38: note: in expansion of macro ‘PRINT’
+   std::sort_heap (v.begin(),v.end());PRINT(v);
+                                      ^
+testHeap.cpp:8:69: error: expected primary-expression before ‘}’ token
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                                                     ^
+testHeap.cpp:23:38: note: in expansion of macro ‘PRINT’
+   std::sort_heap (v.begin(),v.end());PRINT(v);
+                                      ^
+testHeap.cpp:8:69: error: expected ‘)’ before ‘}’ token
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                                                     ^
+testHeap.cpp:23:38: note: in expansion of macro ‘PRINT’
+   std::sort_heap (v.begin(),v.end());PRINT(v);
+                                      ^
+testHeap.cpp:8:69: error: expected primary-expression before ‘}’ token
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                                                     ^
+testHeap.cpp:23:38: note: in expansion of macro ‘PRINT’
+   std::sort_heap (v.begin(),v.end());PRINT(v);
+                                      ^
+testHeap.cpp:8:69: error: expected ‘;’ before ‘}’ token
+ #define PRINT(a) {cout<<"****"<<endl; for(it:a)cout<<it; cout<<endl;}
+                                                                     ^
+testHeap.cpp:23:38: note: in expansion of macro ‘PRINT’
+   std::sort_heap (v.begin(),v.end());PRINT(v);
+                                      ^
