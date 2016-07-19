@@ -1,6 +1,8 @@
-#include<stdio.h>
+
 #include <iostream>
 #include <typeinfo>
+#include <map>
+#include <vector>
 namespace zz {
 using namespace std;
 }
@@ -59,11 +61,40 @@ void test(){
 
 
 
+struct Contain {
+	Contain(){}
+	virtual ~Contain(){}
+	long long a=1;
+	double b={1};//() error
+	double c{1};
+};
+
+struct CA: Contain {
+	
+};
+
 int _aaa, __aaaa, _A;
 const int i=0, &j=i, *g=&i;
 const int *const h=NULL, f=0;
 int main(){
-    using TTT=int;
+    map<int, int> am;
+    am[1]=1;
+    am[2]=2;
+    for(auto tmp: am)
+        cout<<tmp.first<<endl;
+	CA ca;
+	/*Contain con;
+	//bad error
+	//vector<Contain&> testVec{con}; cout<<sizeof(testVec)<<endl;	
+	vector<Contain> testVec1{con}; cout<<sizeof(vector<Contain>)<<"  "<<sizeof(testVec1)<<endl;	
+	Contain & r_con=con;
+	testVec1.push_back(r_con);
+	testVec1.reserve(100);
+	cout<<sizeof(vector<Contain>)<<"  "<<sizeof(testVec1)<<endl;	
+	testVec1.resize(100);
+	cout<<sizeof(vector<Contain>)<<"  "<<sizeof(testVec1)<<endl;	
+   */
+	using TTT=int;
     TTT ttt=1;
     //cout<<sizeof(A)<<" "<<sizeof(AA)<<" "<<sizeof(AB)<<endl;
     int arr[10]={0};

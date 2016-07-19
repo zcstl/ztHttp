@@ -1,15 +1,21 @@
-#ifndef EVENT_MANAGER
-#define EVENT_MANAGER
+#ifndef ZTHTTP_EVENT_MANAGER
+#define ZTHTTP_EVENT_MANAGER
 
 #include <list>
 #include <vector>
+#include <iostream>
 #include <sys/socket.h>
+#include <map>
+#include <pthread.h>
+#include <sys/epoll.h>
+#include <pair>
 
 #include "pthread_poolv1.h"
 
+#define EPOLL_CONS 128
+#define EPOLL_EVNUMS 32
 
-
-namespace ztHttp{
+namespace ztHttp {
 
 /**
 using namespace std;把std下的名字放到当前作用域
@@ -17,17 +23,58 @@ using namespace std;把std下的名字放到当前作用域
 2.此时，ztHttp已包含std的声明
 3.故该语句放在namespace里较好
 **/
+
+/**
+ * 事件复用器，只负责事件复用,但epoll复用与epoll的接口耦和，感觉这是尽目前最大努力的解耦了
+ * **/
+
 using namespace std;
 using std::tr1::function;
 using std::tr1::shared_ptr;
 
 /*sizeof该抽象类，大小为8，含虚函数表指针*/
-class EventHandler {
+class EventHandlerAbstractClass {
 	public:
 		virtual int handle_event()=0;
 		virtual void* get_handle()=0;
-
 };
+
+//epoll事件处理，以fd为单位，一个handler处理一个fd对应所有epoll事件
+//构造函数：使用epoll_event,且联合体为fd
+class EpollEventHandler: public EventHandlerAbstractClass {
+    public:
+        EpollEventHandler(struct epoll_event ee): _epoll_event(ee) {
+
+        }
+        virtual ~EpollEventHandler(){}
+		int handle_event() {
+            cout<<"handle_event for fd: "<<getFd()<<", events: "<<_epoll_event.events<<endl;
+            return 0;
+        }
+		void* get_handle() {
+            return nullptr;
+        }
+        int getEpollEvent() {
+            return _epoll_event;
+        }
+        int getFd() {
+            return _epoll_event.data;//fd
+        }
+
+        int getEvents() {
+            return _epoll_event.events;
+        }
+
+        bool setRdyEvents(uint32_t events) {
+            _rdy_events=events;
+
+        }
+    private:
+        struct epoll_event _epoll_event;//隐藏数据成员的风格
+        int _rdy_events;
+        //epoll返回就绪fd，使用eventhandler执行
+}
+
 
 /**
 Reactor
@@ -36,7 +83,7 @@ Reactor
 class Reactor {
 
 	public:
-		Reactor(EventMultiplexer em);
+		Reactor(EventMultiplexerAbstractClass& em);
 		/**析构函数声明为virtual的目的？**/
 		virtual ~Reactor();
         /**以下方法委托给EventMultiplexer对象执行**/
@@ -70,14 +117,14 @@ class Reactor {
 
 
     private:
-        EventMultiplexer* _em;
+        EventMultiplexerAbstractClass* _em;
 };
 
 /**
 EventMultiplexer
 负责具体实现的借口，遵循DIP
 **/
-class EventMultiplexer {
+class EventMultiplexerAbstractClass {
     public:
         int handle_events()=0;
 		int register_handler(HandlerType* handler)=0;
@@ -85,7 +132,7 @@ class EventMultiplexer {
 		int select()=0;
 };
 
-class EpollMultiplexer: public EventMultiplexer {
+class EpollMultiplexer: public EventMultiplexerAbstractClass {
 
 
     public:
@@ -99,7 +146,7 @@ class EpollMultiplexer: public EventMultiplexer {
 
 
     private:
-        void epollUpdate();//
+        void epollUpdate();//移除和注册都会用到，代码复用
 
 		/**
 		1.至少该子T和主线程会使用该EventMultiplexer对象
@@ -108,28 +155,35 @@ class EpollMultiplexer: public EventMultiplexer {
 		3.其后可以在完整的版本对锁优化（若可以就去掉）；
 		**/
 		pthread_mutex_t _mtx;
+		pthread_mutex_t _mtx_rdy;
 
         int _fd_epoll;
-        int _fd_event;
+        //int _fd_event;//eventfd,linux系统调用，暂不使用
 
+        volatile bool _is_running;
 
         /**类型别名的查找符合名字查找**/
         using Fd=int;
-
+        using events=uint32_t;
 
         /**枚举类型的定义方式**/
         /**
         1.事件类型会不会太少？
         2._fds的定义，若只有三种事件类型，且各种类型只有一种动作，则使用list更好
-        **/
         enum EventType {
             EM_RE,
             EM_WR,
             EM_ERR
         };
 
-
-        map<Fd, map<EventType, void(*)()>> _fds;
+        **/
+        //注册,移除都是以文件描述符为单位       
+        map<Fd, pair<events, EpollEventHandler*>> _fds;
+        map<Fd, events> rdy;
+        //使用vector<handler*>数据结构存储监听事件
+        //不足：粗粒度，依赖于具体类而非接口,查找效率低下
+        //vector<EpollEventHandler*> handlers;
+        //vector<EpollEventHandler*> rdy;
 };
 
 

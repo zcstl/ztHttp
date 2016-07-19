@@ -1,10 +1,11 @@
+#ifndef ZTHTTP_EVENT
+#define ZTHTTP_EVENT
+
 #include <list>
 #include <vector>
 #include <sys/socket.h>
 #include "pthread_poolv1.h"
 
-#ifndef EVENT_
-#define EVENT_
 using namespace std;
 
 
