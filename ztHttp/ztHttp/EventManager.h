@@ -4,13 +4,17 @@
 #include <list>
 #include <vector>
 #include <iostream>
-#include <sys/socket.h>
 #include <map>
-#include <pthread.h>
-#include <sys/epoll.h>
-#include <pair>
+#include <utility> //pair, swap, move
+//gtest里有说明一个ｂｕｇ和这个相关，若包含了其，会发生tuple的重复定义
+//#include <tr1/functional>
+//#include <tr1/shared_ptr.h>
 
-#include "pthread_poolv1.h"
+#include <sys/epoll.h>
+#include <sys/socket.h>
+#include <pthread.h>
+
+#include "../../pthread_poolv1.h"
 
 #define EPOLL_CONS 128
 #define EPOLL_EVNUMS 32
@@ -29,8 +33,12 @@ using namespace std;把std下的名字放到当前作用域
  * **/
 
 using namespace std;
-using std::tr1::function;
-using std::tr1::shared_ptr;
+
+
+
+
+//using std::tr1::function;
+//using std::tr1::shared_ptr;
 
 /*sizeof该抽象类，大小为8，含虚函数表指针*/
 class EventHandlerAbstractClass {
@@ -39,6 +47,8 @@ class EventHandlerAbstractClass {
 		virtual void* get_handle()=0;
 };
 
+class EventMultiplexerAbstractClass;
+
 //epoll事件处理，以fd为单位，一个handler处理一个fd对应所有epoll事件
 //构造函数：使用epoll_event,且联合体为fd
 class EpollEventHandler: public EventHandlerAbstractClass {
@@ -46,7 +56,9 @@ class EpollEventHandler: public EventHandlerAbstractClass {
         EpollEventHandler(struct epoll_event ee): _epoll_event(ee) {
 
         }
-        virtual ~EpollEventHandler(){}
+        //~EpollEventHandler();若不定义会隐式定义   virtual ~EpollEventHandler();　若未定义的话没有vtable，不会隐式定义
+        virtual ~EpollEventHandler(){};
+
 		int handle_event() {
             cout<<"handle_event for fd: "<<getFd()<<", events: "<<_epoll_event.events<<endl;
             return 0;
@@ -55,10 +67,10 @@ class EpollEventHandler: public EventHandlerAbstractClass {
             return nullptr;
         }
         int getEpollEvent() {
-            return _epoll_event;
+            return _epoll_event.events;
         }
         int getFd() {
-            return _epoll_event.data;//fd
+            return _epoll_event.data.fd;//data是ｕｎｉｏｎ
         }
 
         int getEvents() {
@@ -73,7 +85,7 @@ class EpollEventHandler: public EventHandlerAbstractClass {
         struct epoll_event _epoll_event;//隐藏数据成员的风格
         int _rdy_events;
         //epoll返回就绪fd，使用eventhandler执行
-}
+};
 
 
 /**
@@ -83,9 +95,9 @@ Reactor
 class Reactor {
 
 	public:
-		Reactor(EventMultiplexerAbstractClass& em);
-		/**析构函数声明为virtual的目的？**/
-		virtual ~Reactor();
+		Reactor(EventMultiplexerAbstractClass *);
+		virtual ~Reactor() {}//析构一定要被定义，即使是纯虚，但有些编译器，纯虚不能有方法体，，
+
         /**以下方法委托给EventMultiplexer对象执行**/
 		int handle_events();
 		/**
@@ -104,16 +116,12 @@ class Reactor {
 		第二种方法有个很大的缺点，就是decltype(em->getHandlerType())得到的类型得在
 		调用点处可以获得；
 		**/
-        int register_handler(HandlerType* handler)=0;
-		int remove_handler(HandlerType* handler)=0;
+        int register_handler(EventHandlerAbstractClass* handler);
+		int remove_handler(EventHandlerAbstractClass* handler);
 		int select();
 
 
     protected:
-        void test(){
-            for(auto tmp: waitedQueue)
-                PRINT_MSG(tmp);
-        }
 
 
     private:
@@ -126,10 +134,10 @@ EventMultiplexer
 **/
 class EventMultiplexerAbstractClass {
     public:
-        int handle_events()=0;
-		int register_handler(HandlerType* handler)=0;
-		int remove_handler(HandlerType* handler)=0;
-		int select()=0;
+        virtual int handle_events()=0;
+		virtual int register_handler(EventHandlerAbstractClass* handler)=0;
+		virtual int remove_handler(EventHandlerAbstractClass* handler)=0;
+		virtual int select()=0;
 };
 
 class EpollMultiplexer: public EventMultiplexerAbstractClass {
@@ -140,13 +148,14 @@ class EpollMultiplexer: public EventMultiplexerAbstractClass {
         virtual ~EpollMultiplexer();
         int handle_events();
         /**dynamic_cast到目标类型或typeid，若不成功则不能继续注册和移除**/
-		int register_handler(HandlerType* handler);
-		int remove_handler(HandlerType* handler);
+		int register_handler(EventHandlerAbstractClass* handler);
+		int remove_handler(EventHandlerAbstractClass* handler);
 		int select();
 
 
     private:
-        void epollUpdate();//移除和注册都会用到，代码复用
+        bool stopAndEnd();
+        void epollUpdate(int, uint32_t);//移除和注册都会用到，代码复用
 
 		/**
 		1.至少该子T和主线程会使用该EventMultiplexer对象
@@ -177,7 +186,7 @@ class EpollMultiplexer: public EventMultiplexerAbstractClass {
         };
 
         **/
-        //注册,移除都是以文件描述符为单位       
+        //注册,移除都是以文件描述符为单位
         map<Fd, pair<events, EpollEventHandler*>> _fds;
         map<Fd, events> rdy;
         //使用vector<handler*>数据结构存储监听事件
@@ -187,7 +196,17 @@ class EpollMultiplexer: public EventMultiplexerAbstractClass {
 };
 
 
+class EMTask: public ThreadAbstractClass{
 
+	public:
+		EMTask(EventMultiplexerAbstractClass* mup):_evmp(mup){}
+		~EMTask(){}
+		void* run();//类定义完成后才有可能有vtable
+
+	private:
+		EventMultiplexerAbstractClass* _evmp;//遵循dip，这里应该改为父类比较好
+
+};
 
 
 }

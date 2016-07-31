@@ -1,25 +1,28 @@
 /**
 	多线程http服务器－测试
 **/
+#include <vector>
+#include <iostream>
+
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <stdint.h>
 #include <unistd.h>
 #include <netinet/in.h>
+#include <sys/epoll.h>
+
+#include <gtest/gtest.h>
+
 #include "pthread_poolv1.h"
-#include "Event.h"
-#include <vector>
+#include "ztHttp/ztHttp/EventManager.h"
 //
-#include <iostream>
 #define ERRORDIE(str) {cout<<"Error in: "<<str<<endl; exit(-1);}
 /*返回对应ipv4和端口的socket，并且已listen*/
 
-
-
 using namespace std;
+using namespace ztHttp;
 
 int startUp(int);
-
 
 int startUp(in_port_t port){
 	int s_sock=-1;
@@ -38,28 +41,28 @@ int startUp(in_port_t port){
 
 }
 
-auto &a=42;
+const auto &a=42;
 
-int main(int argc, char* argv[]){
+int start_server(int argc, char* argv[]){
 	int err;
 	int s_sock=-1, c_sock=-1;//0应该有用
 	in_port_t s_port=8080;//端口号0？
 	s_sock=startUp(s_port);
 
 	//
-	short count=2;
+	short _count=2;
 	//reactor
-	vector<HttpEventMultiplex*> httpEvs;
-	for(int i=0; i<count; ++i)
-		httpEvs.push_back(new HttpEventMultiplex);
+	vector<EventMultiplexerAbstractClass*> ems;
+	for(int i=0; i<_count; ++i)
+		ems.push_back(new EpollMultiplexer);
     //
-	vector<HttpTasks*> httpTasks;
-	for(int i=0; i<count; ++i)
-		httpTasks.push_back(new HttpTasks(httpEvs[i]));
+	vector<EMTask*> EMTaskss;
+	for(int i=0; i<_count; ++i)
+		EMTaskss.push_back(new EMTask(ems[i]));
 	ThreadPool tp(2);
 	tp.startUp();//开启后才能入队
-    for(int i=0; i<count; ++i)
-		tp.enqueue(httpTasks[i]);
+    for(int i=0; i<_count; ++i)
+		tp.enqueue(EMTaskss[i]);
 	cout<<"Test server is running on port: "<<s_port<<endl;
 	int times=0;
 	while(1){
@@ -67,13 +70,33 @@ int main(int argc, char* argv[]){
 		//	ERRORDIE("main, accpet;");
 		//分配任务给每个县城i
 		//HttpEvent* htev=new HttpEvent(c_sock);
-		MSG_PRINT("begin: ");MSG_PRINT(times);
-		EventHandler* htev=new HttpEvent(c_sock);
-		sleep(1);
-		httpEvs[times++%count]->register_handler(htev);
+		c_sock=accept(s_sock, nullptr, nullptr);
+		epoll_data_t ed;
+		ed.fd=c_sock;
+        struct epoll_event ee{EPOLLIN|EPOLLOUT|EPOLLERR|EPOLLHUP, ed};
+		MSG_PRINT("begin: ");MSG_PRINT(times)
+		EventHandlerAbstractClass* eh=new EpollEventHandler(ee);
+		//sleep(1);
+		ems[times++%_count]->register_handler(eh);
 	}
 	close(s_sock);
 	//delete
 	return 0;
 }
 
+template<typename T>
+T fooTest(T t1, T t2) {
+    return t1+t2;
+}
+
+TEST(FooTest, HandleNoneZeroInput) {
+    EXPECT_EQ(2, fooTest(1, 1));
+    EXPECT_EQ(3, fooTest(1, 1));
+    EXPECT_EQ(2, fooTest(1, 1));
+}
+
+int main(int argc, char* argv[]) {
+    start_server(argc, argv);
+    testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+}

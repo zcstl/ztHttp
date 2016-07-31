@@ -3,9 +3,14 @@
 #include <typeinfo>
 #include <map>
 #include <vector>
+#include <sys/socket.h>
+#include <netinet/in.h>
 namespace zz {
+
+
 using namespace std;
 }
+
 using namespace zz;
 
 char a[5]="test";
@@ -17,6 +22,9 @@ char (* func())[5]{
     cout<<tt<<endl;
 	return &a;
 }
+
+class Base;
+class Der;
 
 struct A{
   virtual void test()=0;
@@ -60,6 +68,13 @@ void test(){
 }
 
 
+class Base {
+
+};
+
+class Der: public Base {
+
+};
 
 struct Contain {
 	Contain(){}
@@ -76,7 +91,64 @@ struct CA: Contain {
 int _aaa, __aaaa, _A;
 const int i=0, &j=i, *g=&i;
 const int *const h=NULL, f=0;
-int main(){
+
+struct testArr {
+	int a;
+	char b[]; //no space
+
+};
+
+
+struct Rval{
+	Rval()=default;
+	Rval(Rval && r): a(r.a){}
+	int a;
+};
+
+
+class Ba{
+	virtual void test()=0;
+};
+class De{
+public:
+	De(Ba&);
+};
+
+int main(int argc, char* argv[]){
+	
+    cout<<"*******"<<endl;
+    for(int i=0; i<argc; ++i)
+        cout<<argv[i]<<endl;
+    cout<<"*******"<<endl;
+
+	cout<<typeid(nullptr).name()<<endl;
+	//cout<<"\"rval\": "<<typeid("rval")<<endl;
+	//cout<<"1 : "<<typeid(1)<<endl;
+	int && a=1;
+	a=2;
+	//cout<<a<<endl;
+	const int & bb=1;
+	Rval rval;
+	cout<<typeid(std::move(rval)).name()<<endl;
+	cout<<typeid(rval).name()<<endl;
+	const Rval & pr=std::move(rval);
+	int && aaa=std::move(1);
+	Rval && pr1=std::move(rval);
+	Rval && pr2=std::move(pr1);
+	pr1.a=22;
+	cout<<1+rval.a<<"－－－"<<endl;
+	//cout<<"a: "<<typeid(a)<<endl;
+	//cout<<"std::move(a): "<<typeid(std::move(a))<<endl;
+	//error int aa[];
+
+	cout<<sizeof(struct sockaddr)<<" <<<"<<sizeof(struct sockaddr_in6)<<"<<<"<<sizeof(struct sockaddr_in)<<"<<<"<<sizeof(struct testArr)<<endl;
+
+	//struct testArr addr{1,{1,2,3}};
+	//addr.a=1;
+	char aa[0];
+	//addr.b={1,2,3};
+	cout<<sizeof(aa)<<"<<"<<endl;
+
     map<int, int> am;
     am[1]=1;
     am[2]=2;
@@ -109,6 +181,16 @@ int main(){
 	extern int y;
 	y=2;
     unsigned char xx=-1;
-    printf("%d\n",xx);
+ 
+	printf("%d\n",xx);
+
+	Base b;
+	Base* pb=&b;
+	Der* pd=static_cast<Der*>(pb);
+	Der d;
+	pb=&d;
 	return 0;
+
 }
+
+

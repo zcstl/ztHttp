@@ -8,8 +8,12 @@
 
 #include <vector>
 #include <list>
+#include <typeinfo>
+
+using namespace std;
 
 namespace ztHttp {
+
 
 /*设计接口：抽象服务
  *简单的缓存实现，不支持多线程使用同个实例，使用方法：size获取大小，pullDown得连续存储，使用后再调用consume删除部分缓存，然后再到下个周期
@@ -18,8 +22,8 @@ class IOBufferAbstractClass {
 public:
     virtual bool append(IOBufferAbstractClass* chunk)=0;
     //virtual bool append(const char* data, unsigned len)=0;  dup
-    template <typename T>
-    virtual bool append(const T* pT, unsigned num)=0;
+    template <typename T>//templates may not be virtual
+    bool append(const T* pT, unsigned num);
     virtual char* pullDown(unsigned num)=0;//返回类型改为share_ptr可好？
     virtual bool consume(unsigned num)=0;
     virtual unsigned size() const=0;
@@ -29,7 +33,7 @@ class IOBuffer: public IOBufferAbstractClass {
 public:
 
     IOBuffer():_size(0){}
-    IOBuffer(const char* data, unsigned len):__size(0){
+    IOBuffer(const char* data, unsigned len):_size(0){
         append(data, len);
     }
     //析构声明为虚函数的目的？
@@ -39,31 +43,36 @@ public:
 
     bool append(IOBufferAbstractClass* chunk) {
         //typeid(e)检查e的类型
+        IOBuffer* echunk=nullptr;
+        //typeid关键字，类似于ｓｉｚｅｏｆ，返回ｔｙｐｅｉｎｆｏ，需ｉｎｃｌｕｄｅ
         if(typeid(*chunk) == typeid(IOBuffer)) {
-            chunk=dynamic_cast<IOBuffer*> chunk;
+            echunk=dynamic_cast<IOBuffer*>(chunk); //<>()
         }
         else {
             //
             return false;
         }
         //chunk is list<vector<char>>
-        for(auto tmp:chunk._chunks) {
+        for(auto tmp:echunk->_chunks) {
             _chunks.push_back(tmp);
         }
-        _size+=chunk->_size;
-        delete chunk;//拷贝完数据后，删除原数据
+        _size+=echunk->_size;
+        delete echunk;//拷贝完数据后，删除原数据
     }
 
     //方案一：new个vector，然后resize，接着调用memcpy函数
     //方案二：reinterpret该指针成char*，放入vector
     template <typename T>
     bool append(const T* pT, unsigned num) {
+
         int len=sizeof(T)*num;
-        pT=reinterpret_cast<const char*> pT;//dangerous for using reinterpret_cast
-        vector<char>* p_vec=new vector<char>(pT, pT+len);//vector的iterator constructor也可以使用数组的首末地址
+
+        const char* cpT=nullptr;
+        cpT=reinterpret_cast<const char*>(pT);//dangerous for using reinterpret_cast
+        vector<char>* p_vec=new vector<char>(cpT, cpT+len);//vector的iterator constructor也可以使用数组的首末地址
         _chunks.push_back(*p_vec);
         delete p_vec;
-        return true; 
+        return true;
     }
 
     char* pullDown(unsigned num) {
@@ -71,11 +80,12 @@ public:
             //
             return nullptr;
         }
-        auto iter1=_chunks.begin(), iter=iter1+1;
-        int len+=iter1->size();
+        auto iter1=_chunks.begin(), iter=++_chunks.begin();//list iter only: --  ,++
+        int len=0;
+        len+=iter1->size();
         while(len<num) {//if i==num, break
             len+=iter->size();
-            iter1->insert(iter1.end(), iter.begin(), iter.end());//从特定位置之前插入 
+            iter1->insert((*iter1).end(), (*iter).begin(), (*iter).end());//从特定位置之前插入
             _chunks.erase(iter1++);
         }
         return &_chunks.begin()->at(0);//>.<  at与[]运算符功能类似，但越界会报错
@@ -97,7 +107,7 @@ public:
     }
 
     unsigned size() const {
-        return _size;   
+        return _size;
     }
 
 
