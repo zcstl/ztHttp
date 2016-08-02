@@ -13,6 +13,11 @@ namespace ztHttp {
 Reactor::Reactor(EventMultiplexerAbstractClass* em):_em(em) {}
 
 //Reactor
+Reactor::~Reactor() {
+    delete _em;
+    _em=nullptr;
+}
+
 int Reactor::handle_events(){
     return _em->handle_events();
 }
@@ -64,7 +69,11 @@ int EpollMultiplexer::handle_events() {
 
         p_handler->handle_event();
     }
+
+    rdy.erase(rdy.begin(), rdy.end());
+
     //pthread_mutex_unlock(&_mtx_rdy);
+    return 0;
 }
 
 int EpollMultiplexer::register_handler(EventHandlerAbstractClass* p_handler) {
@@ -83,23 +92,33 @@ int EpollMultiplexer::register_handler(EventHandlerAbstractClass* p_handler) {
 }
 
 int EpollMultiplexer::remove_handler(EventHandlerAbstractClass* p_handler) {
+
     EpollEventHandler* p_evhandler;
     if(typeid(*p_handler)==typeid(EpollEventHandler)) {
         p_handler=dynamic_cast<EpollEventHandler*>(p_handler);
     }else {
         //
+        cout<<"typeid"<<endl;
         return -1;
     }
+
     if(_fds.find(p_evhandler->getFd())==_fds.end()) {
         //
+        cout<<"no found"<<endl;
         return 0;
     }
+
     pthread_mutex_lock(&_mtx);
     _fds.erase(p_evhandler->getFd());
     pthread_mutex_unlock(&_mtx);
-    epollUpdate(p_evhandler->getFd(), EPOLL_CTL_DEL);
-    return 0;
 
+    epollUpdate(p_evhandler->getFd(), EPOLL_CTL_DEL);
+
+    //
+    delete p_handler;
+    p_handler=nullptr;
+
+    return 0;
 }
 
 int EpollMultiplexer::select() {
@@ -131,14 +150,19 @@ int EpollMultiplexer::select() {
 }
 
 void EpollMultiplexer::epollUpdate(int fd, uint32_t options) {
+
     struct epoll_event ev;
     ev.data.fd=fd;
+
     pthread_mutex_lock(&_mtx);
     ev.events=_fds[fd].first;
     pthread_mutex_unlock(&_mtx);
+
     if(!epoll_ctl(_fd_epoll, options, fd, &ev))
         return;
+
     //error
+    cout<<"epoll update err"<<endl;
 }
 
 void* EMTask::run() {
@@ -152,5 +176,46 @@ void* EMTask::run() {
 
     return nullptr;
 }
+
+//
+int EpollEventHandler::handle_event() {
+    int err=0;
+
+    cout<<"handle_event for fd: "<<getFd()<<", events: "<<_epoll_event.events<<endl;
+
+    char* p_buf=new char[100]{0};
+    size_t siz=100;
+    if((err=::recv(getFd(), p_buf, siz, 0))==0) {
+        cout<<"broken conn!"<<endl;
+        _p_reactor->remove_handler(this);
+        return 0;
+    } else {
+
+    }
+
+    return 0;
+}
+
+void* EpollEventHandler::get_handle() {
+    return nullptr;
+}
+
+int EpollEventHandler::getEpollEvent() {
+    return _epoll_event.events;
+}
+
+int EpollEventHandler::getFd() {
+    return _epoll_event.data.fd;//data «£ı£Ó£È£Ô£Ó
+}
+
+int EpollEventHandler::getEvents() {
+    return _epoll_event.events;
+}
+
+bool EpollEventHandler::setRdyEvents(uint32_t events) {
+    _rdy_events=events;
+
+}
+
 
 }

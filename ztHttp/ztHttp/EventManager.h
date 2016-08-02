@@ -34,7 +34,7 @@ using namespace std;把std下的名字放到当前作用域
 
 using namespace std;
 
-
+class Reactor;
 
 
 //using std::tr1::function;
@@ -50,40 +50,32 @@ class EventHandlerAbstractClass {
 class EventMultiplexerAbstractClass;
 
 //epoll事件处理，以fd为单位，一个handler处理一个fd对应所有epoll事件
+//关闭也是由该ｈandler完成
 //构造函数：使用epoll_event,且联合体为fd
 class EpollEventHandler: public EventHandlerAbstractClass {
+
     public:
-        EpollEventHandler(struct epoll_event ee): _epoll_event(ee) {
+
+        EpollEventHandler(struct epoll_event ee, Reactor* p_reactor):
+         _epoll_event(ee), _p_reactor(p_reactor) {
 
         }
+
         //~EpollEventHandler();若不定义会隐式定义   virtual ~EpollEventHandler();　若未定义的话没有vtable，不会隐式定义
-        virtual ~EpollEventHandler(){};
+        virtual ~EpollEventHandler(){}
+		int handle_event();
+		void* get_handle();
+        int getEpollEvent();
+        int getFd();
+        int getEvents();
+        bool setRdyEvents(uint32_t events);
 
-		int handle_event() {
-            cout<<"handle_event for fd: "<<getFd()<<", events: "<<_epoll_event.events<<endl;
-            return 0;
-        }
-		void* get_handle() {
-            return nullptr;
-        }
-        int getEpollEvent() {
-            return _epoll_event.events;
-        }
-        int getFd() {
-            return _epoll_event.data.fd;//data是ｕｎｉｏｎ
-        }
-
-        int getEvents() {
-            return _epoll_event.events;
-        }
-
-        bool setRdyEvents(uint32_t events) {
-            _rdy_events=events;
-
-        }
     private:
+
         struct epoll_event _epoll_event;//隐藏数据成员的风格
         int _rdy_events;
+
+        Reactor* _p_reactor;
         //epoll返回就绪fd，使用eventhandler执行
 };
 
@@ -96,7 +88,8 @@ class Reactor {
 
 	public:
 		Reactor(EventMultiplexerAbstractClass *);
-		virtual ~Reactor() {}//析构一定要被定义，即使是纯虚，但有些编译器，纯虚不能有方法体，，
+		//
+		virtual ~Reactor();//析构一定要被定义，即使是纯虚，但有些编译器，纯虚不能有方法体，，
 
         /**以下方法委托给EventMultiplexer对象执行**/
 		int handle_events();
@@ -199,12 +192,12 @@ class EpollMultiplexer: public EventMultiplexerAbstractClass {
 class EMTask: public ThreadAbstractClass{
 
 	public:
-		EMTask(EventMultiplexerAbstractClass* mup):_evmp(mup){}
+		EMTask(Reactor* em):_evmp(em){}
 		~EMTask(){}
 		void* run();//类定义完成后才有可能有vtable
 
 	private:
-		EventMultiplexerAbstractClass* _evmp;//遵循dip，这里应该改为父类比较好
+		Reactor* _evmp;//遵循dip，这里应该改为父类比较好
 
 };
 

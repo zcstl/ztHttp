@@ -114,9 +114,19 @@ public:
 	De(Ba&);
 };
 
+void testNameDup() {
+	cout<<"this is a func"<<endl;
+}
+
+
 int main(int argc, char* argv[]){
-	
-    cout<<"*******"<<endl;
+
+	testNameDup();
+	const char* testNameDup="this is a c_str";
+	cout<<testNameDup<<endl;
+	//testNameDup();改名字被覆盖，不是函数了
+    
+	cout<<"*******"<<endl;
     for(int i=0; i<argc; ++i)
         cout<<argv[i]<<endl;
     cout<<"*******"<<endl;
