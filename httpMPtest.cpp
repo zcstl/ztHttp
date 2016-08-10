@@ -12,22 +12,29 @@
 #include <sys/epoll.h>
 
 #include <gtest/gtest.h>
+#include <glog/logging.h>
+//#include <glog/log_severity.h>
 
+#include "ztHttp/ztHttp/zcsIO.h"
 #include "pthread_poolv1.h"
 #include "ztHttp/ztHttp/EventManager.h"
+
+#define BACKLOG 128
+
 //
-#define ERRORDIE(str) {cout<<"Error in: "<<str<<endl; exit(-1);}
+//#define ERRORDIE(str) {cout<<"Error in: "<<str<<endl; exit(-1);}
 /*返回对应ipv4和端口的socket，并且已listen*/
 
 using namespace std;
 using namespace ztHttp;
 
-int startUp(int);
+int start_up(int);
 
-int startUp(in_port_t port){
+int start_up(in_port_t &port){
+
 	int s_sock=-1;
 	if((s_sock=socket(AF_INET, SOCK_STREAM, 0))==-1)//0
-		ERRORDIE("startUp, s_socket;");
+		LOG(ERROR)<<"start_up: socket()";
 
 	struct sockaddr_in s_name;
 	s_name.sin_family=AF_INET;
@@ -35,68 +42,91 @@ int startUp(in_port_t port){
 	s_name.sin_addr.s_addr=htonl(INADDR_ANY);//INADDR_ANY,htons,htonl,ip32bit
 
 	if(bind(s_sock, (struct sockaddr*)&s_name, sizeof(s_name))==-1)
-		ERRORDIE("startUp bind;");
+		LOG(ERROR)<<"start_up bind()";
 
     //port reuse
 	char opt=1, *p_opt=&opt;
-	if(!setsockopt(s_sock, SOL_SOCKET, SO_REUSEADDR, p_opt, sizeof(opt))) {
-        //
-	}
+	//retunr 0, -1
+	if(setsockopt(s_sock, SOL_SOCKET, SO_REUSEADDR, p_opt, sizeof(opt)))
+        LOG(INFO)<<"start_up: setsockopt(), SO_REUSEADDR not set!";
 
     //keepalive
-    bool isKA=true, *p_isKA=&isKA;
-	if(!setsockopt(s_sock, SOL_SOCKET, SO_KEEPALIVE, p_isKA, sizeof(isKA))) {
-        //
-	}
+    bool isKa=true, *p_isKa=&isKa;
+	if(setsockopt(s_sock, SOL_SOCKET, SO_KEEPALIVE, p_isKa, sizeof(isKa)))
+        LOG(INFO)<<"start_up: setsockopt(), SO_KEEPALIVE not set!";
 
-	if(port==0);//获取动态分配的端口号
+	//update port with the port which is dynamically allocated
+    if(!port) {
+        socklen_t s_name_len=0;
+        //return 0, -1;    not static_cast!!
+        if(getsockname(s_sock, reinterpret_cast<struct sockaddr* >(&s_name), &s_name_len))
+            LOG(ERROR)<<"start_up: getsockname()";
+        port=ntohs(s_name.sin_port);
+    }
 
-	if(listen(s_sock, 100)==-1)
-		ERRORDIE("startUp listen");
+    //return 0, -1
+	if(listen(s_sock, BACKLOG))
+		LOG(ERROR)<<"start_up: listen()";
 
 	return s_sock;
 
 }
 
-const auto &a=42;
-
 int start_server(int argc, char* argv[]){
+
 	int err;
 	int s_sock=-1, c_sock=-1;//0应该有用
-	in_port_t s_port=8080;//端口号0？
-	s_sock=startUp(s_port);
+	//in_port_t s_port=8080;
+    //0: dynamically allocate
+	in_port_t s_port=0;
+	s_sock=start_up(s_port);
 
-	//
+	//the number of threads, reactor; one reactor per thread
 	short _count=2;
 	//reactor
-	vector<Reactor*> ems;
+	vector<Reactor*> reactors;
 	for(int i=0; i<_count; ++i)
-		ems.push_back(new Reactor(new EpollMultiplexer));
-    //
+		reactors.push_back(new Reactor(new EpollMultiplexer));
+
+    //EMTasks run the reactor all the time until captures a signal or program exit;
+    //a EMTasks per thread
 	vector<EMTask*> EMTaskss;
 	for(int i=0; i<_count; ++i)
-		EMTaskss.push_back(new EMTask(ems[i]));
+		EMTaskss.push_back(new EMTask(reactors[i]));
+
+    //
 	ThreadPool tp(2);
-	tp.startUp();//开启后才能入队
+	tp.startUp();
     for(int i=0; i<_count; ++i)
 		tp.enqueue(EMTaskss[i]);
-	cout<<"Test server is running on port: "<<s_port<<endl;
-	int times=0;
+
+	LOG(INFO)<<"Test server is running on port: "<<s_port;
+
+	int reactor_select=0, times=0;
 	while(1){
-		//if((c_sock=accept(s_sock, nullptr, nullptr)) == -1)
-		//	ERRORDIE("main, accpet;");
-		//分配任务给每个县城i
-		//HttpEvent* htev=new HttpEvent(c_sock);
-		c_sock=accept(s_sock, nullptr, nullptr);
-		epoll_data_t ed;
-		ed.fd=c_sock;
-        struct epoll_event ee{EPOLLIN|EPOLLOUT|EPOLLERR|EPOLLHUP, ed};
-		MSG_PRINT("begin: ");MSG_PRINT(times)
-		EventHandlerAbstractClass* eh=
-		    new EpollEventHandler(ee, ems[times++%_count]);
-		//sleep(1);
-		ems[times++%_count]->register_handler(eh);
+
+		reactor_select=++reactor_select%_count;
+
+        //blocking listening socket
+        //return c_sock, -1
+		if((c_sock=accept(s_sock, nullptr, nullptr))!=-1) {
+
+            epoll_data_t ed;
+	    	ed.fd=c_sock;
+            struct epoll_event ee{EPOLLIN|EPOLLOUT|EPOLLERR|EPOLLHUP, ed};
+		
+            VLOG(6)<<"start_server:  accept() "<<times++;
+		    EventHandlerAbstractClass* eh=
+		        new EpollEventHandler(ee, reactors[reactor_select]);
+		    
+            /**may be blocked**/
+		    reactors[reactor_select]->register_handler(eh);
+
+        } else
+            LOG(INFO)<<"start_server: accept(): broken conn";
+
 	}
+
 	close(s_sock);
 	//delete
 	return 0;
@@ -115,6 +145,46 @@ TEST(FooTest, HandleNoneZeroInput) {
 
 int main(int argc, char* argv[]) {
     start_server(argc, argv);
-    testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+    google::InitGoogleLogging(argv[0]);//使用-libglog无法找到，最后直接添加.so；为什么找不到，，，
+    //testing::InitGoogleTest(&argc, argv);
+    LOG(INFO)<< "Found" << 1 <<"NUM_SEVERITIES";
+    //return RUN_ALL_TESTS();
 }
+
+/*
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+int getMin(vector<int> &vals, int dest);
+
+
+int main() {
+    int n=0, x=0;
+    //string ns, xs;
+    cin>>n>>x;
+    //cin>>ns>>xs;
+    //n=stoi(ns);
+    //x=stoi(xs);
+    //
+    vector<int> vals(n, 0);
+    for(int i=1; i<n; ++i)
+        cin>>vals[i];
+    cout<<getMin(vals, x)<<endl;
+}
+
+int getMin(vector<int> &vals, int dest) {
+    sort(vals.begin(), vals.end());
+    int total=0;
+    for(auto tmp: vals) {
+        if(total>=dest)
+            return total;
+        total+=tmp;
+    }
+    if(total>=dest)
+        return total;
+    return -1;
+
+}*/

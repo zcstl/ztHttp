@@ -38,6 +38,7 @@
 			<Add directory="../../../test/googletest/googletest/include" />
 		</Compiler>
 		<Linker>
+			<Add library="../../../glog/.libs/libglog.so" />
 			<Add directory="../../../test/googletest/googletest/mybuild" />
 			<Add directory="../../../test/googletest/googletest" />
 		</Linker>
@@ -52,10 +53,14 @@
 		<Unit filename="HttpTaskThread.h" />
 		<Unit filename="main.cpp" />
 		<Unit filename="printMsg.h" />
+		<Unit filename="simHttp.cpp" />
+		<Unit filename="simHttp.h" />
 		<Unit filename="tcp.cpp" />
 		<Unit filename="tcp.h" />
 		<Unit filename="test.cpp" />
 		<Unit filename="test2.cpp" />
+		<Unit filename="zcsIO.cpp" />
+		<Unit filename="zcsIO.h" />
 		<Extensions>
 			<code_completion />
 			<debugger />

@@ -7,6 +7,7 @@
 
 #include "EventManager.h"
 
+void accept_request(void *arg);
 
 namespace ztHttp {
 
@@ -59,34 +60,40 @@ int EpollMultiplexer::handle_events() {
     //解决方法，rdy1作为缓冲，select放入其中，handle_events先取然处理；
     //pthread_mutex_lock(&_mtx_rdy);
     EpollEventHandler* p_handler;
+    sleep(2);
     for(auto ardy: rdy) {//map的是pair
-        cout<<ardy.first<<"  "<<ardy.second<<endl;
+        cout<<"EpollMultiplexer::handle_events"<<ardy.first<<" ***  "<<ardy.second<<endl;
         //pthread_mutex_lock(&_mtx);
         p_handler=_fds.find(ardy.first)->second.second;
         //pthread_mutex_unlock(&_mtx);
-        cout<<"  tt"<<endl;
-        cout<<"  tt"<<endl;
-
+        cout<<"EpollMultiplexer::handle_events:  fd of handler is: "
+            <<p_handler->getFd()<<endl;
         p_handler->handle_event();
     }
 
     rdy.erase(rdy.begin(), rdy.end());
-
+    for(auto tmp: rdy)
+        cout<<" EpollMultiplexer::handle_events: test iserase:"
+        <<tmp.first<<endl;
     //pthread_mutex_unlock(&_mtx_rdy);
     return 0;
 }
 
 int EpollMultiplexer::register_handler(EventHandlerAbstractClass* p_handler) {
+
     EpollEventHandler* p_evhandler;
+
     if(typeid(*p_handler)==typeid(EpollEventHandler)) {
         p_evhandler=dynamic_cast<EpollEventHandler*>(p_handler);
     }else {
         //
         return -1;
     }
+
     pthread_mutex_lock(&_mtx);
     _fds[p_evhandler->getFd()]=make_pair(p_evhandler->getEvents(), p_evhandler);
     pthread_mutex_unlock(&_mtx);
+
     epollUpdate(p_evhandler->getFd(), EPOLL_CTL_ADD);
     return 0;
 }
@@ -95,7 +102,13 @@ int EpollMultiplexer::remove_handler(EventHandlerAbstractClass* p_handler) {
 
     EpollEventHandler* p_evhandler;
     if(typeid(*p_handler)==typeid(EpollEventHandler)) {
-        p_handler=dynamic_cast<EpollEventHandler*>(p_handler);
+        /**bug:  p_handler=dynamic_cast<EpollEventHandler*>(p_handler);
+            从而使p_evhandler未定义，后文使用p_evhandler，产生未定义的行为
+            这种情况的指针，术语是什么？
+        **/
+        p_evhandler=dynamic_cast<EpollEventHandler*>(p_handler);
+        cout<<"EpollMultiplexer::remove_handler111：　no found"
+            <<p_evhandler->getFd()<<endl;
     }else {
         //
         cout<<"typeid"<<endl;
@@ -104,10 +117,13 @@ int EpollMultiplexer::remove_handler(EventHandlerAbstractClass* p_handler) {
 
     if(_fds.find(p_evhandler->getFd())==_fds.end()) {
         //
-        cout<<"no found"<<endl;
+        cout<<"EpollMultiplexer::remove_handler222：　no found"
+            <<p_evhandler->getFd()<<endl;/*************/
         return 0;
     }
 
+    cout<<"EpollMultiplexer::remove_handler：　erase))))))))))"<<endl;
+    sleep(2);
     pthread_mutex_lock(&_mtx);
     _fds.erase(p_evhandler->getFd());
     pthread_mutex_unlock(&_mtx);
@@ -129,12 +145,13 @@ int EpollMultiplexer::select() {
 
     //timeOut  ms
     if( (msg=epoll_wait(_fd_epoll, p_evs, EPOLL_EVNUMS, timeOut)) < 0 ) {
-        //
+        cout<<"EpollMultiplexer::select: "<<msg<<endl;sleep(2);
         return msg;
     }else if(msg==0) {
-        //
+        cout<<"EpollMultiplexer::select: "<<msg<<endl;sleep(2);
         return 0;
     }
+    cout<<"EpollMultiplexer::select: "<<msg<<endl;sleep(2);
     struct epoll_event ev;
     //for(int i=0; i<EPOLL_EVNUMS; ++i) { 内存错误
     for(int i=0; i<msg; ++i) {
@@ -158,8 +175,13 @@ void EpollMultiplexer::epollUpdate(int fd, uint32_t options) {
     ev.events=_fds[fd].first;
     pthread_mutex_unlock(&_mtx);
 
-    if(!epoll_ctl(_fd_epoll, options, fd, &ev))
+    cout<<"EpollMultiplexer::epollUpdate：　　 epoll upd"<<endl;
+    if(!epoll_ctl(_fd_epoll, options, fd, &ev)) {
+        cout<<"EpollMultiplexer::epollUpdate：　del"<<endl;
+        sleep(2);
         return;
+    }
+
 
     //error
     cout<<"epoll update err"<<endl;
@@ -170,8 +192,8 @@ void* EMTask::run() {
     //信号？
     int _count=1024;
     while(_count) {
-        _evmp->select();
-        _evmp->handle_events();
+        _p_reactor->select();
+        _p_reactor->handle_events();
     }
 
     return nullptr;
@@ -181,17 +203,25 @@ void* EMTask::run() {
 int EpollEventHandler::handle_event() {
     int err=0;
 
-    cout<<"handle_event for fd: "<<getFd()<<", events: "<<_epoll_event.events<<endl;
+    cout<<"EpollEventHandler::handle_event：　handle_event for fd: "
+        <<getFd()<<", events: "<<_epoll_event.events<<endl;
 
     char* p_buf=new char[100]{0};
     size_t siz=100;
+
     if((err=::recv(getFd(), p_buf, siz, 0))==0) {
-        cout<<"broken conn!"<<endl;
+        cout<<"EpollEventHandler::handle_event：　broken conn!"<<endl;
+        cout<<"EpollMultiplexer::remove_handler000：　no found"
+            <<this->getFd()<<endl;
         _p_reactor->remove_handler(this);
         return 0;
     } else {
 
     }
+
+    int fd=_epoll_event.data.fd;
+    int *p_fd=&fd;
+    accept_request(p_fd);
 
     return 0;
 }

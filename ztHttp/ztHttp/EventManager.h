@@ -192,12 +192,12 @@ class EpollMultiplexer: public EventMultiplexerAbstractClass {
 class EMTask: public ThreadAbstractClass{
 
 	public:
-		EMTask(Reactor* em):_evmp(em){}
+		EMTask(Reactor* p_reactor):_p_reactor(p_reactor){}
 		~EMTask(){}
 		void* run();//类定义完成后才有可能有vtable
 
 	private:
-		Reactor* _evmp;//遵循dip，这里应该改为父类比较好
+		Reactor* _p_reactor;//遵循dip，这里应该改为父类比较好
 
 };
 
