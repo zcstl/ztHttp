@@ -26,13 +26,16 @@ class ThreadPoolAbstractClass{
 		virtual int reStart()=0;
 		virtual int endPool()=0;
 		virtual int enqueue(ThreadAbstractClass*)=0;
+		virtual pthread_t getPthread(int)=0;
 };
 
 class ThreadPool:public ThreadPoolAbstractClass{
+
 	public:
+
 		//构造函数的定义是否可以与初始化列表分开，在cpp实现？
 		//此处mtx，cond和isCanceled可执行默认初始化，然后在startUp里进行赋值
-		ThreadPool(int threadsNumber):isWaited(0), isCancelled(0), threads(threadsNumber){}
+		ThreadPool(int threadsNumber):isWaited(0), isCancelled(0), threads(threadsNumber), _size(threadsNumber) {}
 		//ThreadPool:threads(threadsNumber), isFree(isFree)(int threadsNumber, bool isFree){}
 		~ThreadPool(){}//析构函数的分析，指针，内存释放，此处默认即可
 		int startUp();//开启pool，线程阻塞等待消息
@@ -41,6 +44,8 @@ class ThreadPool:public ThreadPoolAbstractClass{
 		//int enqueue(PoolMsg msg, func operation, bool isFree);//	消息队列入队，需指明消息和消息处理函数
 		int reStart();
 		int enqueue(ThreadAbstractClass* athread);
+        pthread_t getPthread(int idx);
+
 	private:
 		/*
 		struct DataNode{
@@ -53,6 +58,7 @@ class ThreadPool:public ThreadPoolAbstractClass{
 		//int runThread();
 		static void* runThread(void*);//pthread_create参数要求
 		vector<pthread_t> threads;//该类的实现细节
+		unsigned _size;
 		/*违反DIP*/
 		//list<DataNode> nodes;
 		list<ThreadAbstractClass*> tasks;

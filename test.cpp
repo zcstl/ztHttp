@@ -118,6 +118,16 @@ void testNameDup() {
 	cout<<"this is a func"<<endl;
 }
 
+struct TestStaticF {
+    static void tt();
+    static int a;
+};
+
+int  TestStaticF::a=1;
+
+void TestStaticF::tt(){
+
+}
 
 int main(int argc, char* argv[]){
 

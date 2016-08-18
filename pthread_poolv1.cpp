@@ -108,3 +108,10 @@ int ThreadPool::endPool(){
 	MSG_PRINT("Pthread pool is end!");
 	return 0;
 }
+
+
+pthread_t ThreadPool::getPthread(int idx) {
+
+    return threads[idx%_size];
+
+}

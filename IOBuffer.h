@@ -29,6 +29,43 @@ public:
     virtual unsigned size() const=0;
 };
 
+
+/**
+ * 面向流
+ * **/
+class IOBuffer: public IOBufferAbstractClass {
+public:
+
+    IOBuffer();
+    IOBuffer(const char* data, unsigned len);
+
+    virtual ~IOBuffer();
+
+
+    bool append(IOBufferAbstractClass* chunk);
+
+    template <typename T>
+    bool append(const T* pT, unsigned num);
+
+    char* pullDown(unsigned num);
+    bool consume(unsigned num);
+
+    unsigned size() const;
+
+
+private:
+
+    list<vector<char>> _chunks; //将数据拷贝到缓存中，独立于实参；但就要求IO Buffer对象在堆中了，毕竟栈空间有限
+    unsigned _size;
+    IOBuffer(const IOBuffer&); //将拷贝构造函数声明为私有，编译器会增加其实现，禁止拷贝,禁止原因未知？？
+
+};
+
+
+/**
+实现与类接口分离
+负责实现的编译单元含test
+
 class IOBuffer: public IOBufferAbstractClass {
 public:
 
@@ -120,6 +157,7 @@ private:
     IOBuffer(const IOBuffer&); //将拷贝构造函数声明为私有，编译器会增加其实现，禁止拷贝,禁止原因未知？？
 
 };
+**/
 }
 #endif
 

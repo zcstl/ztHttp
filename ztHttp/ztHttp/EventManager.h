@@ -13,6 +13,7 @@
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <pthread.h>
+#include <signal.h>
 
 #include "../../pthread_poolv1.h"
 
@@ -20,6 +21,18 @@
 #define EPOLL_EVNUMS 32
 
 namespace ztHttp {
+
+class EventHandlerAbstractClass;
+class Reactor;
+
+/*
+extern ThreadPool tp;
+extern vector<Reactor*> ::reactors;
+extern vector<EventHandlerAbstractClass*> ::reactor1_wait_for_register_pool;
+extern vector<EventHandlerAbstractClass*> ::reactor2_wait_for_register_pool;
+extern pthread_mutex_t ::reactor1_wait_mtx;
+extern pthread_mutex_t ::reactor2_wait_mtx;
+*/
 
 /**
 using namespace std;把std下的名字放到当前作用域
@@ -36,6 +49,8 @@ using namespace std;
 
 class Reactor;
 
+
+static void sig_usr1(int signo);
 
 //using std::tr1::function;
 //using std::tr1::shared_ptr;
@@ -192,15 +207,55 @@ class EpollMultiplexer: public EventMultiplexerAbstractClass {
 class EMTask: public ThreadAbstractClass{
 
 	public:
+
 		EMTask(Reactor* p_reactor):_p_reactor(p_reactor){}
 		~EMTask(){}
 		void* run();//类定义完成后才有可能有vtable
 
 	private:
+
+        void registerEvents();
 		Reactor* _p_reactor;//遵循dip，这里应该改为父类比较好
 
 };
 
+//此处只有两个Reactor，分别对应SIGUSR1，SIGUSR2；
+//此处得改进，在Ｔ数大于２的情况下，Ｔ更具其标识在signal handle中取不同的vector；
+/*
+static void sig_usr1(int signo) {
+
+    pthread_mutex_lock(&::reactor1_wait_mtx);
+    //控制连接数
+    while(!reactor2_wait_for_register_pool.empty()) {
+
+        EventHandlerAbstractClass *eh=reactor2_wait_for_register_pool.back();
+        reactor2_wait_for_register_pool.pop_back();
+        reactors[0]->register_handler(eh);
+
+    }
+    pthread_mutex_unlock(&reactor1_wait_mtx);
+    pthread_kill(tp.getPthread(0), SIGUSR1);
+
+}
+*/
+
+/*
+static void sig_usr2(int signo) {
+
+    pthread_mutex_lock(&reactor1_wait_mtx);
+    //控制连接数
+    while(!reactor2_wait_for_register_pool.empty()) {
+
+        EventHandlerAbstractClass *eh=reactor2_wait_for_register_pool.back();
+        reactor2_wait_for_register_pool.pop_back();
+        reactors[1]->register_handler(eh);
+
+    }
+    pthread_mutex_unlock(&reactor1_wait_mtx);
+    pthread_kill(tp.getPthread(0), SIGUSR1);
+
+}
+*/
 
 }
 #endif

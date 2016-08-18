@@ -5,6 +5,7 @@
 #include <unistd.h> //close, chown, ,,
 #include <typeinfo>
 
+#include "zcsIO.h"
 #include "EventManager.h"
 
 void accept_request(void *arg);
@@ -192,11 +193,21 @@ void* EMTask::run() {
     //ÐÅºÅ£¿
     int _count=1024;
     while(_count) {
+
         _p_reactor->select();
+
+        if(register_flag)
+            registerEvents();
+
         _p_reactor->handle_events();
+
     }
 
     return nullptr;
+}
+
+void EMTask::registerEvents() {
+    cout<<"get¡¡signal"<<endl;
 }
 
 //
