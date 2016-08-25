@@ -20,6 +20,8 @@
 #include "ztHttp/ztHttp/zcsIO.h"
 #include "pthread_poolv1.h"
 #include "ztHttp/ztHttp/EventManager.h"
+#include "ztHttp/ztHttp/tcp.h"
+#include "IOBuffer.h"
 
 #define BACKLOG 128
 #define BACKLOG_Queue 32
@@ -37,51 +39,40 @@ using namespace ztHttp;
 //extern sigset_t mask;
 //void* signal_handle(void*);
 
-vector<EventHandlerAbstractClass*> *p_wait_queue0=nullptr;
-vector<EventHandlerAbstractClass*> *p_wait_queue1=nullptr;
+//多个reactors争用一个vector
+vector<EventHandlerAbstractClass*> *p_wait_queue = nullptr;
+pthread_mutex_t wait_queue_mtx = PTHREAD_MUTEX_INITIALIZER;
 
-pthread_mutex_t wait_queue0_mtx=PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t wait_queue1_mtx=PTHREAD_MUTEX_INITIALIZER;
+//vector<EventHandlerAbstractClass*> *p_wait_queue0=nullptr;
+//vector<EventHandlerAbstractClass*> *p_wait_queue1=nullptr;
+
+//pthread_mutex_t wait_queue0_mtx=PTHREAD_MUTEX_INITIALIZER;
+//pthread_mutex_t wait_queue1_mtx=PTHREAD_MUTEX_INITIALIZER;
 
 pthread_t signal_handle_thread;
 
-/*
-class Queue_Register{
+//using SendCallFunc=IOBufferAbstractClass*(void*);
+//using RecvCallFunc=void*(IOBufferAbstractClass*);
+//using DisConnCallFunc=void*(void*);
 
-    using ee=pair<epoll_event, EventHandlerAbstractClass*>;
+IOBufferAbstractClass* sendCallFunc(void *buf) {
 
- public:
+    IOBuffer *p_buf=nullptr;
+    char *data=new char[6]{'h','e','l','l','o','\0'};
+    IOBufferAbstractClass *_buf = static_cast<IOBufferAbstractClass*> (buf);
 
-    static Queue_Register* instance() {
+    if( typeid(*_buf) == typeid(IOBuffer) ) {
 
-        if(_instance==nullptr)
-            _instance=new Queue_Register;
-        return _instance;
+        p_buf = dynamic_cast<IOBuffer*> (_buf);
+        p_buf->append(data, 6);
+        cout<<p_buf<<endl;
 
+    } else {
+        cout<<"sendCallFUnc: typeid error"<<endl;
     }
-
-    ee getElement() {
-        return reactor1_wait_for_register_pool.pop_back();
-    }
-
- private:
-
-    Queue_Register():  {
-
-        pthread_mutex_init(&reactor1_wait_mtx, 0);
-        pthread_mutex_init(&reactor2_wait_mtx, 0);
-
-    }
-
-    vector<pair<epoll_event, EventHandlerAbstractClass*>> reactor1_wait_for_register_pool(BACKLOG/4);
-    vector<pair<epoll_event, EventHandlerAbstractClass*>> reactor2_wait_for_register_pool(BACKLOG/4);
-    pthread_mutex_t reactor1_wait_mtx;
-    pthread_mutex_t reactor2_wait_mtx;
-
-    static Queue_Register *_instance=nullptr;
 
 }
-*/
+
 
 
 int start_up(int);
@@ -130,6 +121,13 @@ int start_up(in_port_t &port){
 }
 
 
+void sig_tran(int signo) {
+
+    LOG(INFO)<<"sig_tran()";
+    pthread_kill(signal_handle_thread, signo);
+
+}
+
 int start_server(int argc, char* argv[]){
 
     int err=0;
@@ -138,9 +136,13 @@ int start_server(int argc, char* argv[]){
     sigemptyset(&mask);
     sigaddset(&mask, SIGINT);
     sigaddset(&mask, SIGUSR1);
+    sigaddset(&mask, SIGUSR2);
+    z_signal(SIGINT, sig_tran);
+    z_signal(SIGUSR1, sig_tran);
+    z_signal(SIGUSR2, sig_tran);
 
-    if((err=pthread_sigmask(SIG_BLOCK, &mask, 0)) != 0)
-        LOG(FATAL)<<"start_up: pthread_sigmask(), error";
+    //if((err=pthread_sigmask(SIG_BLOCK, &mask, 0)) != 0)
+    //    LOG(FATAL)<<"start_up: pthread_sigmask(), error";
 
     //signal handle pthread
     pthread_create(&signal_handle_thread, nullptr, signal_handle, nullptr);
@@ -151,7 +153,7 @@ int start_server(int argc, char* argv[]){
     int s_sock=-1, c_sock=-1;//0应该有用
 	//in_port_t s_port=8080;
     //0: dynamically allocate
-	in_port_t s_port=8080;
+	in_port_t s_port=8000;
 	s_sock=start_up(s_port);
 
 	//the number of threads, reactor; one reactor per thread
@@ -175,11 +177,15 @@ int start_server(int argc, char* argv[]){
 
 	LOG(INFO)<<"Test server is running on port: "<<s_port;
 
-    //wait queue
+    /*//wait queue
     p_wait_queue0=new vector<EventHandlerAbstractClass*>;
     p_wait_queue1=new vector<EventHandlerAbstractClass*>;
     p_wait_queue0->reserve(BACKLOG_Queue);
     p_wait_queue1->reserve(BACKLOG_Queue);
+    */
+
+    p_wait_queue=new vector<EventHandlerAbstractClass*>;
+    p_wait_queue->reserve(BACKLOG_Queue);
 
 	int reactor_select=0, times=0;
 	while(1){
@@ -195,8 +201,11 @@ int start_server(int argc, char* argv[]){
             struct epoll_event ee{EPOLLIN|EPOLLOUT|EPOLLERR|EPOLLHUP, ed};
 
             VLOG(6)<<"start_server:  accept() "<<times++;
+            //若使用http则需要new TcpSocket设置回然后传给handle类
+            TcpSocketAbstractClass *p_tcp = new TcpSocket(c_sock);
+            p_tcp->setSendCallBack(sendCallFunc);
 		    EventHandlerAbstractClass* eh=
-		        new EpollEventHandler(ee, reactors[reactor_select]);
+		        new EpollEventHandler(ee, reactors[reactor_select], p_tcp);
 
             enqueue_and_wait(eh, reactor_select);
 		    //reactors[reactor_select]->register_handler(eh);
@@ -214,43 +223,19 @@ int start_server(int argc, char* argv[]){
 
 void enqueue_and_wait(EventHandlerAbstractClass *eh, int reactor_select) {
 
-    switch (reactor_select) {
+    pthread_mutex_lock(&wait_queue_mtx);
 
-        case 0:
+    if( p_wait_queue->size() == BACKLOG_Queue ) {
 
-            pthread_mutex_lock(&wait_queue0_mtx);
-
-            if(p_wait_queue0->size()==BACKLOG_Queue) {
-                VLOG(4)<<"enqueue_and_wait(), full and discard the conn";
-                pthread_mutex_unlock(&wait_queue0_mtx);
-                return;
-            }
-
-            p_wait_queue0->push_back(eh);
-            pthread_mutex_unlock(&wait_queue0_mtx);
-
-            pthread_kill(signal_handle_thread, SIGUSR1);
-            break;
-
-        case 1:
-
-            pthread_mutex_lock(&wait_queue1_mtx);
-
-            if(p_wait_queue1->size()==BACKLOG_Queue) {
-                VLOG(4)<<"enqueue_and_wait(), full and discard the conn";
-                pthread_mutex_unlock(&wait_queue1_mtx);
-                return;
-            }
-
-            p_wait_queue1->push_back(eh);
-            pthread_mutex_unlock(&wait_queue1_mtx);
-
-            pthread_kill(signal_handle_thread, SIGUSR1);
-            break;
-
-        default:
-            LOG(ERROR)<<"enqueue_and_wait() error for: "<<reactor_select;
+        LOG(INFO)<<"enqueue_and_wait(), full and discard the conn";
+        pthread_mutex_unlock(&wait_queue_mtx);
+        return;
     }
+
+    p_wait_queue->push_back(eh);
+    pthread_mutex_unlock(&wait_queue_mtx);
+
+    pthread_kill(signal_handle_thread, SIGUSR1);
 
 }
 
@@ -259,15 +244,54 @@ void enqueue_and_wait(EventHandlerAbstractClass *eh, int reactor_select) {
 int main(int argc, char* argv[]) {
 
     testing::InitGoogleTest(&argc, argv);
+    google::InitGoogleLogging(argv[0]);//使用-libglog无法找到，最后直接添加.so；为什么找不到，，，
 
     start_server(argc, argv);
 
-    google::InitGoogleLogging(argv[0]);//使用-libglog无法找到，最后直接添加.so；为什么找不到，，，
     //LOG(INFO)<< "Found" << 1 <<"NUM_SEVERITIES";
     return RUN_ALL_TESTS();
 }
 
 
+
+/*-------------------------------------------------------------------------------------------*/
+/*
+class Queue_Register{
+
+    using ee=pair<epoll_event, EventHandlerAbstractClass*>;
+
+ public:
+
+    static Queue_Register* instance() {
+
+        if(_instance==nullptr)
+            _instance=new Queue_Register;
+        return _instance;
+
+    }
+
+    ee getElement() {
+        return reactor1_wait_for_register_pool.pop_back();
+    }
+
+ private:
+
+    Queue_Register():  {
+
+        pthread_mutex_init(&reactor1_wait_mtx, 0);
+        pthread_mutex_init(&reactor2_wait_mtx, 0);
+
+    }
+
+    vector<pair<epoll_event, EventHandlerAbstractClass*>> reactor1_wait_for_register_pool(BACKLOG/4);
+    vector<pair<epoll_event, EventHandlerAbstractClass*>> reactor2_wait_for_register_pool(BACKLOG/4);
+    pthread_mutex_t reactor1_wait_mtx;
+    pthread_mutex_t reactor2_wait_mtx;
+
+    static Queue_Register *_instance=nullptr;
+
+}
+*/
 /**
  *not signal version
  * **/
@@ -331,8 +355,51 @@ int start_server(int argc, char* argv[]){
 	return 0;
 }
 */
+/*
+void enqueue_and_wait1(EventHandlerAbstractClass *eh, int reactor_select) {
 
+    switch (reactor_select) {
 
+        case 0:
+
+            pthread_mutex_lock(&wait_queue0_mtx);
+
+            if(p_wait_queue0->size()==BACKLOG_Queue) {
+                VLOG(4)<<"enqueue_and_wait(), full and discard the conn";
+                pthread_mutex_unlock(&wait_queue0_mtx);
+                return;
+            }
+
+            p_wait_queue0->push_back(eh);
+            pthread_mutex_unlock(&wait_queue0_mtx);
+
+            pthread_kill(signal_handle_thread, SIGUSR1);
+            break;
+
+        case 1:
+
+            pthread_mutex_lock(&wait_queue1_mtx);
+
+            if(p_wait_queue1->size()==BACKLOG_Queue) {
+                VLOG(4)<<"enqueue_and_wait(), full and discard the conn";
+                pthread_mutex_unlock(&wait_queue1_mtx);
+                return;
+            }
+
+            p_wait_queue1->push_back(eh);
+            pthread_mutex_unlock(&wait_queue1_mtx);
+
+            pthread_kill(signal_handle_thread, SIGUSR1);
+            break;
+
+        default:
+            LOG(ERROR)<<"enqueue_and_wait() error for: "<<reactor_select;
+    }
+
+}
+*/
+
+/*-------------------------------------------------------------------------------------------*/
 
 /*
 template<typename T>

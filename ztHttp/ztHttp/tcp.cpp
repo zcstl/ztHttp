@@ -93,7 +93,8 @@ TcpSocket::TcpSocket(in_port_t port): _isServer(false), _port(port), _maxRecvSiz
 }
 
 
-TcpSocket::TcpSocket(int fd_connected_sock): _fd_sock(fd_connected_sock), _isServer(true), _maxRecvSize(1024), _maxSendSize(1024) {
+TcpSocket::TcpSocket(int fd_connected_sock): _fd_sock(fd_connected_sock),
+    _isServer(true), _maxRecvSize(1024), _maxSendSize(1024) {
 
     pthread_mutex_init(&_mtx, 0);
     socklen_t sl;
@@ -120,10 +121,11 @@ int TcpSocket::getFd() {
 //将IOBuffer内容写到socket的写缓冲区
 ssize_t TcpSocket::write(IOBufferAbstractClass* chunk) {
 
-    bool res=_sendBuffer.append(chunk);
+    if(!chunk)
+        _sendBuffer.append(chunk);
 
     if(_sendCall)
-        _sendBuffer.append(_sendCall(nullptr));
+        _sendBuffer.append(_sendCall(&_sendBuffer));//隐式转换
 
     int sz=_maxSendSize<_sendBuffer.size()?_maxSendSize:_sendBuffer.size();
     char* wb=_sendBuffer.pullDown(sz);
@@ -170,7 +172,8 @@ ssize_t TcpSocket::read(IOBufferAbstractClass* p_read_buffer) {
     if(_recvCall)
         _recvCall(&_recvBuffer);
     //
-    p_read_buffer=&_recvBuffer;
+    if(!p_read_buffer)
+        p_read_buffer=&_recvBuffer;
 
     return false;
 }

@@ -15,6 +15,7 @@
 #include <pthread.h>
 #include <signal.h>
 
+#include "tcp.h"
 #include "../../pthread_poolv1.h"
 
 #define EPOLL_CONS 128
@@ -72,9 +73,14 @@ class EpollEventHandler: public EventHandlerAbstractClass {
     public:
 
         EpollEventHandler(struct epoll_event ee, Reactor* p_reactor):
-         _epoll_event(ee), _p_reactor(p_reactor) {
+            _epoll_event(ee), _p_reactor(p_reactor) {
+
+            TcpSocket* _p_tcp = new TcpSocket(ee.data.fd);
 
         }
+
+        EpollEventHandler(struct epoll_event ee, Reactor* p_reactor, TcpSocketAbstractClass *p_tcpsocket):
+            _epoll_event(ee), _p_reactor(p_reactor), _p_tcp(p_tcpsocket) {}
 
         //~EpollEventHandler();若不定义会隐式定义   virtual ~EpollEventHandler();　若未定义的话没有vtable，不会隐式定义
         virtual ~EpollEventHandler(){}
@@ -87,10 +93,18 @@ class EpollEventHandler: public EventHandlerAbstractClass {
 
     private:
 
+        bool handle_read();
+        bool handle_write();
+        bool handle_err();
+        bool handle_hangup();
+
         struct epoll_event _epoll_event;//隐藏数据成员的风格
         int _rdy_events;
 
+        TcpSocketAbstractClass *_p_tcp;
+
         Reactor* _p_reactor;
+
         //epoll返回就绪fd，使用eventhandler执行
 };
 
@@ -162,6 +176,10 @@ class EpollMultiplexer: public EventMultiplexerAbstractClass {
 
 
     private:
+
+        //rst
+        void quit_and_rst();
+
         bool stopAndEnd();
         void epollUpdate(int, uint32_t);//移除和注册都会用到，代码复用
 
@@ -215,6 +233,7 @@ class EMTask: public ThreadAbstractClass{
 	private:
 
         void registerEvents();
+        void quit_reactor();
 		Reactor* _p_reactor;//遵循dip，这里应该改为父类比较好
 
 };

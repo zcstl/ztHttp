@@ -3,9 +3,11 @@
  *2,Useful customize function
  * **/
 
-#include <glog/logging.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <iostream>
+
+#include <glog/logging.h>
 
 #include "zcsIO.h"
 
@@ -80,20 +82,30 @@ void *signal_handle(void *arg) {
     int signo=0, err=0;
 
     while(1) {
-
+        LOG(INFO)<<"signal_handle thread: begin";
+        //std::cout<<"signal_handle begin"<<std::endl;
         if((err=sigwait(&mask, &signo)) != 0)
             LOG(ERROR)<<"signal_handle(): sigwait error";
-
+        //std::cout<<"signal_handle continue"<<std::endl;
+        LOG(INFO)<<"signal_handle thread: continue";
         switch (signo) {
 
             case SIGINT:
+                //reactor停止注册操作，在select或handles检测该标志，异常终止conn
+                LOG(INFO)<<"signal_handle thread: case SIGINT";
                 quit_wait_flag=2;
                 //
                 break;
 
             case SIGUSR1:
+                LOG(INFO)<<"signal_handle thread: case SIGUSR1";
                 ++register_flag;
                 break;
+
+            case SIGUSR2:
+                LOG(INFO)<<"signal_handle thread: case SIGUSR2";
+                LOG(INFO)<<"SIGINT and exit";
+                exit(0);
 
             default:
                 LOG(ERROR)<<"signal_handle(): unexpected signal"<<signo;
@@ -101,8 +113,6 @@ void *signal_handle(void *arg) {
         }
 
     }
-
-
 
 }
 

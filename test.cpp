@@ -118,18 +118,45 @@ void testNameDup() {
 	cout<<"this is a func"<<endl;
 }
 
-struct TestStaticF {
-    static void tt();
-    static int a;
-};
-
-int  TestStaticF::a=1;
-
-void TestStaticF::tt(){
-
+void testest(const int &a) {
+    cout<<a<<endl;
 }
 
+//无效static int testStatic=0;
+namespace {
+    static int teststatic=1;
+}
+
+struct TestStaticF {
+    static constexpr int a=0;
+};
+
+//此处若不定义，则testest调用出错；
+constexpr  int TestStaticF::a; 
+
+
+struct Base1 {
+    int i;
+};
+
+class Der1: private Base1 {
+    public:
+        using Base1::i;
+};
+
+struct DerDer1: private Der1 {
+    void test(){
+        cout<<"DerDer1  "<<i<<endl;
+    }
+};
+
+
 int main(int argc, char* argv[]){
+    
+    DerDer1 pp;
+    pp.test();
+    
+    testest(TestStaticF::a);
 
 	testNameDup();
 	const char* testNameDup="this is a c_str";
