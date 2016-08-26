@@ -1,5 +1,5 @@
 /**
-	多线程http服务器－测试
+	多线程http服务器
 **/
 #include <vector>
 #include <iostream>
@@ -123,7 +123,7 @@ int start_up(in_port_t &port){
 
 void sig_tran(int signo) {
 
-    LOG(INFO)<<"sig_tran()";
+    LOG(INFO)<<"sig_tran():"<<signo;
     pthread_kill(signal_handle_thread, signo);
 
 }

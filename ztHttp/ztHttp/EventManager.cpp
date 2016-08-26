@@ -75,38 +75,59 @@ int EpollMultiplexer::handle_events() {
     //执行期间对rdy一直上锁，若别的T调用select则回被阻塞，影响销量
     //解决方法，rdy1作为缓冲，select放入其中，handle_events先取然处理；
     //pthread_mutex_lock(&_mtx_rdy);
-    EpollEventHandler* p_handler;
+    EpollEventHandler *p_handler=nullptr;
 
-    sleep(2);
+    //sleep(2);
 
     for(auto ardy: rdy) {//map的是pair
 
-        cout<<"EpollMultiplexer::handle_events"<<ardy.first<<" ***  "<<ardy.second<<endl;
-        //pthread_mutex_lock(&_mtx);
-        p_handler=_fds.find(ardy.first)->second.second;
-        //pthread_mutex_unlock(&_mtx);
-        cout<<"EpollMultiplexer::handle_events:  fd of handler is: "
-            <<p_handler->getFd()<<endl;
+        LOG(INFO)<<"EpollMultiplexer::handle_events(): fd: "
+            <<ardy.first<<" events:  "<<ardy.second;
 
-        if( !p_handler->setRdyEvents(ardy.second))
-            LOG(ERROR)<<"EpollMultiplexer::handle_events()  ";
+        pthread_mutex_lock(&_mtx);
+        //map::find,,,,map::end()
+        if(  _fds.find(ardy.first) == _fds.end() ) {
+
+            pthread_mutex_unlock(&_mtx);
+            LOG(ERROR)<<"EpollMultiplexer::handle_events(): fd: "
+            <<ardy.first<<" not found in _fds ";
+
+        }
+
+        p_handler = _fds.find(ardy.first)->second.second;
+        //cout<<_fds.find(ardy.first)->first<<endl;
+        pthread_mutex_unlock(&_mtx);
+
+        //uint32_t 赋给 int　　error:   std::bad_typeid, aborted
+        //cout<<typeid(ardy.second).name()<<endl;
+        //cout<<typeid(uint32_t).name()<<endl;
+        cout<<11<<endl;
+        if( !p_handler->setRdyEvents(ardy.second) ) {
+
+            cout<<22<<endl;
+            LOG(ERROR)<<"EpollMultiplexer::handle_events()"
+                "  EpollEventHandler::setRdyEvents";
+
+        }
+
         p_handler->handle_event();
 
     }
 
     rdy.erase(rdy.begin(), rdy.end());
-    for(auto tmp: rdy)
-        cout<<" EpollMultiplexer::handle_events: test iserase:"
-        <<tmp.first<<endl;
+    //for(auto tmp: rdy)
+    //    cout<<" EpollMultiplexer::handle_events: test iserase:"
+    //    <<tmp.first<<endl;
     //pthread_mutex_unlock(&_mtx_rdy);
+
     return 0;
 
 }
 
 int EpollMultiplexer::register_handler(EventHandlerAbstractClass* p_handler) {
 
-    if(register_flag)
-        return -1;
+    //if(register_flag)
+    //    return -1;
 
     EpollEventHandler* p_evhandler = nullptr;
 
@@ -190,6 +211,7 @@ int EpollMultiplexer::select() {
         return 0;
     }
 
+    LOG(INFO)<<"EpollMultiplexer::select():  "<<msg;
     struct epoll_event ev;
     //for(int i=0; i<EPOLL_EVNUMS; ++i) { 内存错误
     for(int i = 0; i < msg; ++i) {
@@ -220,14 +242,10 @@ void EpollMultiplexer::epollUpdate(int fd, uint32_t options) {
     pthread_mutex_unlock(&_mtx);
 
     //epoll_ctl: 0, -1, errno
-    if( (err=epoll_ctl(_fd_epoll, options, fd, &ev) == 0 ) ) {
-        LOG(INFO)<<"EpollMultiplexer::epollUpdate：　del";
-        //sleep(2);
-        return;
-    } else {
-        LOG(ERROR)<<"EpollMultiplexer::epollUpdate(): epoll_ctl errno: "
-            <<err;
-    }
+    if( (err = epoll_ctl(_fd_epoll, options, fd, &ev)) != 0 )
+        LOG(ERROR)<<"EpollMultiplexer::epollUpdate()："<<errno;
+
+    LOG(INFO)<<"EpollMultiplexer::epollUpdate() success for "<<options;
 
 }
 
@@ -297,15 +315,16 @@ void EMTask::registerEvents() {
 
     while( p_wait_queue->size() ) {
 
+        LOG(INFO)<<"EMTask::registerEvents(): "<<p_wait_queue->size()
+            <<" for reactor "<<_p_reactor;
         EventHandlerAbstractClass *p_eh = *--p_wait_queue->end();
         _p_reactor->register_handler(p_eh);
         p_wait_queue->pop_back();
+        --register_flag;
 
     }
 
     pthread_mutex_unlock(&wait_queue_mtx);
-
-    --register_flag;
 
 }
 
@@ -399,7 +418,11 @@ int EpollEventHandler::getEvents() {
 }
 
 bool EpollEventHandler::setRdyEvents(uint32_t events) {
-    _rdy_events=events;
+
+    //lock
+    _rdy_events = events;
+
+    return true;
 
 }
 

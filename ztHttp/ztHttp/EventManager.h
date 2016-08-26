@@ -99,7 +99,8 @@ class EpollEventHandler: public EventHandlerAbstractClass {
         bool handle_hangup();
 
         struct epoll_event _epoll_event;//隐藏数据成员的风格
-        int _rdy_events;
+        //int _rdy_events; error
+        uint32_t _rdy_events;
 
         TcpSocketAbstractClass *_p_tcp;
 
