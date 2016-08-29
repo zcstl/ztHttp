@@ -35,15 +35,22 @@ IOBuffer::~IOBuffer() {
 //类似于深拷贝
 bool IOBuffer::append(IOBufferAbstractClass* chunk) {
 
+    if(!chunk)
+        return true;
+
     //typeid(e)检查e的类型
     IOBuffer* echunk=nullptr;
     //typeid关键字，类似于ｓｉｚｅｏｆ，返回ｔｙｐｅｉｎｆｏ，需ｉｎｃｌｕｄｅ
     if(typeid(*chunk) == typeid(IOBuffer)) {
+
         echunk=dynamic_cast<IOBuffer*>(chunk); //<>()
+
     }
     else {
+
         LOG(FATAL)<<"IOBuffer::append(): typeid error!";
         return false;
+
     }
     //chunk is list<vector<char>>
     for(auto tmp:echunk->_chunks) {
@@ -54,7 +61,7 @@ bool IOBuffer::append(IOBufferAbstractClass* chunk) {
 
     //delete echunk;//拷贝完数据后，删除原数据
 
-    
+
     return true;
 }
 
@@ -92,11 +99,11 @@ char* IOBuffer::pullDown(unsigned num) {
     len+=iter_begin->size();
 
     while(len<num) {//if i==num, break
-     
+
         len+=iter->size();
         iter_begin->insert( (*iter_begin).end(), (*iter).begin(), (*iter).end() );//从特定位置之前插入
         _chunks.erase(iter++);
-   
+
     }
 
     return &_chunks.begin()->at(0);//>.<  at与[]运算符功能类似，但越界会报错
@@ -106,15 +113,20 @@ char* IOBuffer::pullDown(unsigned num) {
 //consume与pollDown配合使用，若没有使用pullDown，直接使用consume可能失败
 bool IOBuffer::consume(unsigned num) {
 
-    auto iter=_chunks.begin();
+    auto iter =_chunks.begin();
     int siz=iter->size();
-    if(num>siz || siz==0) {
+    if(num > siz || siz == 0) {
         //
         return false;
     }
-    if(siz==num) {
+
+    if(siz == num) {
+
         _chunks.erase(iter);
+        return true;
+
     }
+
     iter->erase(iter->begin(), iter->begin()+num);
 
     return true;
@@ -133,22 +145,22 @@ unsigned IOBuffer::size() const {
 TEST(IOBuffer_test, test_all) {
 
     char c1[]="test1";
-    char c2[]="test2"; 
-    char c3[]="test3"; 
+    char c2[]="test2";
+    char c3[]="test3";
 
     IOBuffer *bf=new IOBuffer(c1, strlen(c1));
     ASSERT_EQ(5, bf->size());
 
     ASSERT_TRUE(bf->append(new IOBuffer(c2, strlen(c2))));
-   
-    //strlen  null char 
-    bf->append(c3, sizeof(c3)/sizeof(char)); 
+
+    //strlen  null char
+    bf->append(c3, sizeof(c3)/sizeof(char));
     ASSERT_EQ(16, bf->size());
 
     char t1[7]={0};
     strcpy(t1, bf->pullDown(6));
     ASSERT_STREQ("test1t", t1);
-    
+
     bf->consume(6);
     ASSERT_EQ(10, bf->size());
 

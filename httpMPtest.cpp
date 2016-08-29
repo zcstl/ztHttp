@@ -68,8 +68,12 @@ IOBufferAbstractClass* sendCallFunc(void *buf) {
         cout<<p_buf<<endl;
 
     } else {
+
         cout<<"sendCallFUnc: typeid error"<<endl;
+
     }
+
+    return nullptr;
 
 }
 
@@ -153,7 +157,7 @@ int start_server(int argc, char* argv[]){
     int s_sock=-1, c_sock=-1;//0应该有用
 	//in_port_t s_port=8080;
     //0: dynamically allocate
-	in_port_t s_port=8000;
+	in_port_t s_port=8080;
 	s_sock=start_up(s_port);
 
 	//the number of threads, reactor; one reactor per thread

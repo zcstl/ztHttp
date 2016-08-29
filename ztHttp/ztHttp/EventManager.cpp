@@ -101,14 +101,16 @@ int EpollMultiplexer::handle_events() {
         //uint32_t ¸³¸ø int¡¡¡¡error:   std::bad_typeid, aborted
         //cout<<typeid(ardy.second).name()<<endl;
         //cout<<typeid(uint32_t).name()<<endl;
-        cout<<11<<endl;
+        //cout<<11<<endl;
         if( !p_handler->setRdyEvents(ardy.second) ) {
 
-            cout<<22<<endl;
+            //cout<<22<<endl;
             LOG(ERROR)<<"EpollMultiplexer::handle_events()"
                 "  EpollEventHandler::setRdyEvents";
 
         }
+
+        //cout<<33<<endl;
 
         p_handler->handle_event();
 
@@ -216,12 +218,12 @@ int EpollMultiplexer::select() {
     //for(int i=0; i<EPOLL_EVNUMS; ++i) { ÄÚ´æ´íÎó
     for(int i = 0; i < msg; ++i) {
 
-        ev=*(p_evs+i);
+        ev = *(p_evs+i);
 
         pthread_mutex_lock(&_mtx_rdy);
         if( rdy.find(ev.data.fd) != rdy.end() )
             LOG(INFO)<<"EpollMultiplexer::select(): rdy is not empty!!";
-        rdy[ev.data.fd]=ev.events;
+        rdy[ev.data.fd] = ev.events;
         pthread_mutex_unlock(&_mtx_rdy);
 
     }
@@ -334,28 +336,30 @@ int EpollEventHandler::handle_event() {
     LOG(INFO)<<"EpollEventHandler::handle_event(): fd: "
         <<getFd()<<", events: "<<_epoll_event.events;
 
-    if( _rdy_events && EPOLLIN )
+    if( _rdy_events & EPOLLIN )
         if( !handle_read() )
             if( !_p_tcp->isConnected() ) {
                 _p_reactor->remove_handler(this);
                 return 0;
             }
 
-    if( _rdy_events && EPOLLOUT )
+    cout<<EPOLLIN<<" "<<EPOLLOUT<<" "<<EPOLLERR<<" "<<EPOLLHUP<<" "<<_rdy_events<<endl;
+    //EPOLLERR:4,    EPOLLOUT:8
+    if( _rdy_events & EPOLLOUT )
         if( !handle_write() )
             if( !_p_tcp->isConnected() ) {
                 _p_reactor->remove_handler(this);
                 return 0;
             }
 
-    if( _rdy_events && EPOLLERR ) {
+    if( _rdy_events & EPOLLERR ) {
         handle_err();
         _p_reactor->remove_handler(this);
         return 0;
     }
 
 
-    if( _rdy_events && EPOLLHUP ) {
+    if( _rdy_events & EPOLLHUP ) {
         handle_hangup();//
         _p_reactor->remove_handler(this);
         return 0;
@@ -367,6 +371,7 @@ int EpollEventHandler::handle_event() {
 
 bool EpollEventHandler::handle_read() {
 
+    cout<<"read"<<endl;
     _p_tcp->read(nullptr);
     return true;
     /*
@@ -387,17 +392,21 @@ bool EpollEventHandler::handle_read() {
 }
 
 bool EpollEventHandler::handle_write() {
+
+    cout<<"write"<<endl;
     _p_tcp->write(nullptr);
+    cout<<"write end"<<endl;
     return true;
+
 }
 
 bool EpollEventHandler::handle_err() {
-    //
+    cout<<"err"<<endl;
     return true;
 }
 
 bool EpollEventHandler::handle_hangup() {
-    //
+    cout<<"hug"<<endl;
     return true;
 }
 
@@ -420,7 +429,9 @@ int EpollEventHandler::getEvents() {
 bool EpollEventHandler::setRdyEvents(uint32_t events) {
 
     //lock
+    cout<<"----b  events"<<endl;
     _rdy_events = events;
+    cout<<"----e  events"<<endl;
 
     return true;
 

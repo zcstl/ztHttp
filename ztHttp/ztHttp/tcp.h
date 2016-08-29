@@ -77,8 +77,8 @@ class TcpSocket: public TcpSocketAbstractClass {
 
 public:
 
-    TcpSocket(uint16_t port);
-    TcpSocket(int fd_connected_sock);
+    //TcpSocket(uint16_t port);
+    TcpSocket(in_port_t fd_connected_sock);
 
     ~TcpSocket();
 

@@ -215,7 +215,7 @@ class EpollMultiplexer: public EventMultiplexerAbstractClass {
         **/
         //注册,移除都是以文件描述符为单位
         map<Fd, pair<events, EpollEventHandler*>> _fds;
-        map<Fd, events> rdy;
+        map<Fd, events> rdy;  //就绪的fd及事件，可能多个
         //使用vector<handler*>数据结构存储监听事件
         //不足：粗粒度，依赖于具体类而非接口,查找效率低下
         //vector<EpollEventHandler*> handlers;

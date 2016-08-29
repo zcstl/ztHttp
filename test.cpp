@@ -152,7 +152,8 @@ struct DerDer1: private Der1 {
 
 
 int main(int argc, char* argv[]){
-    
+   
+
     DerDer1 pp;
     pp.test();
     
