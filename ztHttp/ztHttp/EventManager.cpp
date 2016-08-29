@@ -336,6 +336,18 @@ int EpollEventHandler::handle_event() {
     LOG(INFO)<<"EpollEventHandler::handle_event(): fd: "
         <<getFd()<<", events: "<<_epoll_event.events;
 
+    if( _rdy_events & EPOLLERR ) {
+        handle_err();
+        _p_reactor->remove_handler(this);
+        return 0;
+    }
+
+    if( _rdy_events & EPOLLHUP ) {
+        handle_hangup();//
+        _p_reactor->remove_handler(this);
+        return 0;
+    }
+
     if( _rdy_events & EPOLLIN )
         if( !handle_read() )
             if( !_p_tcp->isConnected() ) {
@@ -351,19 +363,6 @@ int EpollEventHandler::handle_event() {
                 _p_reactor->remove_handler(this);
                 return 0;
             }
-
-    if( _rdy_events & EPOLLERR ) {
-        handle_err();
-        _p_reactor->remove_handler(this);
-        return 0;
-    }
-
-
-    if( _rdy_events & EPOLLHUP ) {
-        handle_hangup();//
-        _p_reactor->remove_handler(this);
-        return 0;
-    }
 
     return 0;
 
@@ -401,8 +400,10 @@ bool EpollEventHandler::handle_write() {
 }
 
 bool EpollEventHandler::handle_err() {
-    cout<<"err"<<endl;
+
+    LOG(INFO)<<"EpollEventHandler::handle_err()";
     return true;
+
 }
 
 bool EpollEventHandler::handle_hangup() {

@@ -73,6 +73,9 @@ IOBufferAbstractClass* sendCallFunc(void *buf) {
 
     }
 
+    delete data;
+    data = nullptr;
+
     return nullptr;
 
 }
@@ -202,7 +205,8 @@ int start_server(int argc, char* argv[]){
 
             epoll_data_t ed;
 	    	ed.fd=c_sock;
-            struct epoll_event ee{EPOLLIN|EPOLLOUT|EPOLLERR|EPOLLHUP, ed};
+	    	/**/
+            struct epoll_event ee{EPOLLIN|EPOLLOUT|EPOLLRDHUP, ed};
 
             VLOG(6)<<"start_server:  accept() "<<times++;
             //若使用http则需要new TcpSocket设置回然后传给handle类
@@ -250,7 +254,7 @@ int main(int argc, char* argv[]) {
     testing::InitGoogleTest(&argc, argv);
     google::InitGoogleLogging(argv[0]);//使用-libglog无法找到，最后直接添加.so；为什么找不到，，，
 
-    start_server(argc, argv);
+    //start_server(argc, argv);
 
     //LOG(INFO)<< "Found" << 1 <<"NUM_SEVERITIES";
     return RUN_ALL_TESTS();

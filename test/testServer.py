@@ -13,3 +13,5 @@ c_sock.connect(ADDR)
 data=c_sock.recv(BUFSIZE)
 
 print data
+
+c_sock.close()
