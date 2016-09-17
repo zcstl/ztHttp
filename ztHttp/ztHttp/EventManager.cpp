@@ -393,7 +393,7 @@ bool EpollEventHandler::handle_read() {
 bool EpollEventHandler::handle_write() {
 
     cout<<"write"<<endl;
-    _p_tcp->write(nullptr);
+    cout<<_p_tcp->write(nullptr)<<endl;
     cout<<"write end"<<endl;
     return true;
 

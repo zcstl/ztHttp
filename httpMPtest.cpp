@@ -254,7 +254,7 @@ int main(int argc, char* argv[]) {
     testing::InitGoogleTest(&argc, argv);
     google::InitGoogleLogging(argv[0]);//使用-libglog无法找到，最后直接添加.so；为什么找不到，，，
 
-    //start_server(argc, argv);
+    start_server(argc, argv);
 
     //LOG(INFO)<< "Found" << 1 <<"NUM_SEVERITIES";
     return RUN_ALL_TESTS();
