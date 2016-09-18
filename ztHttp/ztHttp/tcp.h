@@ -11,6 +11,12 @@
 
 #define MAXCONNNUM  128
 
+#define TCP_NOMAL 0
+#define TCP_RD_CLOSED 1
+#define TCP_WR_CLOSED 2
+#define TCP_CLOSED 3
+
+
 namespace ztHttp {
 
 class TcpSocketAbstractClass;
@@ -70,6 +76,30 @@ private:
 using SendCallFunc=IOBufferAbstractClass*(void*);
 using RecvCallFunc=void*(IOBufferAbstractClass*);
 using DisConnCallFunc=void*(void*);
+
+
+class Http{
+
+public:
+    int read(IOBufferAbstractClass*);
+    int write(IOBufferAbstractClass*);
+
+private:
+
+    int get_line(char*, int); //从_in_buffer取一行放入buf; //size 没考虑，bug
+    void unimplemented(IOBufferAbstractClass*);
+    void not_found(IOBufferAbstractClass*);
+    void serve_file(const char *filename, IOBufferAbstractClass*);
+    void headers(const char *filename, IOBufferAbstractClass* buf);
+    void cat(FILE *resource, IOBufferAbstractClass* buf);
+
+    void execute_cgi(int client, const char *path,
+        const char *method, const char *query_string);
+
+    vector<char> _in_buffer;
+
+
+};
 
 
 //server和client的socket耦和在一起，以后再解耦，但这样就需要两个接口，所以也不是个好选择
@@ -144,10 +174,13 @@ private:
     //控制tcpsocket的类型，是作为客户端去connect，还是作为服务端由监听套接字返回的
     const bool _isServer;
     bool _isConnected;
+    char _status;
 
     TcpSocket(const TcpSocket&);
 
     friend class TcpListeningSocket;
+
+    Http* _p_http;
 
 
 };

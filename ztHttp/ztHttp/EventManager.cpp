@@ -155,6 +155,7 @@ int EpollMultiplexer::remove_handler(EventHandlerAbstractClass* p_handler) {
     if(register_flag)
         return -1;
 
+    LOG(INFO)<<"EpollMultiplexer::remove_handler() ";
     EpollEventHandler* p_evhandler=nullptr;
     if( typeid(*p_handler) == typeid(EpollEventHandler )) {
 
@@ -171,7 +172,8 @@ int EpollMultiplexer::remove_handler(EventHandlerAbstractClass* p_handler) {
         return -1;
 
     }
-
+    cout << p_evhandler->getFd() << endl;
+    for(auto tmp: _fds)cout << tmp.first << endl;
     if( _fds.find(p_evhandler->getFd()) == _fds.end() ) {
         //
         LOG(ERROR)<<"EpollEventHandler::remove_handler():"
@@ -363,15 +365,18 @@ int EpollEventHandler::handle_event() {
                 _p_reactor->remove_handler(this);
                 return 0;
             }
+    //¼ò»¯´¦Àí
+    _p_tcp->disConnected();
+    _p_reactor->remove_handler(this);
 
     return 0;
-
 }
 
 bool EpollEventHandler::handle_read() {
 
     cout<<"read"<<endl;
-    _p_tcp->read(nullptr);
+    if(_p_tcp->read(nullptr) == -1)
+        return false;
     return true;
     /*
     if((err=::recv(getFd(), p_buf, siz, 0))==0) {
@@ -393,7 +398,8 @@ bool EpollEventHandler::handle_read() {
 bool EpollEventHandler::handle_write() {
 
     cout<<"write"<<endl;
-    cout<<_p_tcp->write(nullptr)<<endl;
+    if(_p_tcp->write(nullptr) == -1)
+        return false;
     cout<<"write end"<<endl;
     return true;
 

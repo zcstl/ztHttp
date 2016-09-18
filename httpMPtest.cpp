@@ -25,6 +25,7 @@
 
 #define BACKLOG 128
 #define BACKLOG_Queue 32
+#define SERVER_STRING "Server: jdbhttpd/0.1.0\r\n"
 
 //
 //#define ERRORDIE(str) {cout<<"Error in: "<<str<<endl; exit(-1);}
@@ -57,14 +58,46 @@ pthread_t signal_handle_thread;
 
 IOBufferAbstractClass* sendCallFunc(void *buf) {
 
+    char data[1024*2];
+    //(void)filename;  /* could use filename to determine file type */
+    strcpy(data, "HTTP/1.0 200 OK\r\n");
+    //send(client, buf, strlen(buf), 0);
+    strcpy(data, SERVER_STRING);
+    //send(client, buf, strlen(buf), 0);
+    sprintf(data, "Content-Type: text/html\r\n");
+    //send(client, buf, strlen(buf), 0);
+    strcpy(data, "\r\n");
+    //send(client, buf, strlen(buf), 0);
+    //char buf[1024];
+    //sprintf(buf, "HTTP/1.0 404 NOT FOUND\r\n");
+    //send(client, buf, strlen(buf), 0);
+    //sprintf(buf, SERVER_STRING);
+    //send(client, buf, strlen(buf), 0);
+    //sprintf(buf, "Content-Type: text/html\r\n");
+    //send(client, buf, strlen(buf), 0);
+    //sprintf(buf, "\r\n");
+    //send(client, buf, strlen(buf), 0);
+    sprintf(data, "<HTML><TITLE>Not Found</TITLE>\r\n");
+    //send(client, buf, strlen(buf), 0);
+    sprintf(data, "<BODY><P>The server could not fulfill\r\n");
+    //send(client, buf, strlen(buf), 0);
+    sprintf(data, "your request because the resource specified\r\n");
+    //send(client, buf, strlen(buf), 0);
+    sprintf(data, "is unavailable or nonexistent.\r\n");
+    //send(client, buf, strlen(buf), 0);
+    sprintf(data, "</BODY></HTML>\r\n\0");
+    //send(client, buf, strlen(buf), 0);
+
+
     IOBuffer *p_buf=nullptr;
-    char *data=new char[6]{'h','e','l','l','o','\0'};
+    //char *data=new char[6]{'h','e','l','l','o','\0'};
+
     IOBufferAbstractClass *_buf = static_cast<IOBufferAbstractClass*> (buf);
 
     if( typeid(*_buf) == typeid(IOBuffer) ) {
 
         p_buf = dynamic_cast<IOBuffer*> (_buf);
-        p_buf->append(data, 6);
+        p_buf->append(data, strlen(data) + 1);
         cout<<p_buf<<endl;
 
     } else {
@@ -73,8 +106,8 @@ IOBufferAbstractClass* sendCallFunc(void *buf) {
 
     }
 
-    delete data;
-    data = nullptr;
+    //delete data;
+    //data = nullptr;
 
     return nullptr;
 
@@ -206,12 +239,13 @@ int start_server(int argc, char* argv[]){
             epoll_data_t ed;
 	    	ed.fd=c_sock;
 	    	/**/
-            struct epoll_event ee{EPOLLIN|EPOLLOUT|EPOLLRDHUP, ed};
+            //struct epoll_event ee{EPOLLIN|EPOLLOUT|EPOLLRDHUP, ed};
+            struct epoll_event ee{EPOLLOUT|EPOLLRDHUP, ed};
 
             VLOG(6)<<"start_server:  accept() "<<times++;
             //若使用http则需要new TcpSocket设置回然后传给handle类
             TcpSocketAbstractClass *p_tcp = new TcpSocket(c_sock);
-            p_tcp->setSendCallBack(sendCallFunc);
+            //p_tcp->setSendCallBack(sendCallFunc);
 		    EventHandlerAbstractClass* eh=
 		        new EpollEventHandler(ee, reactors[reactor_select], p_tcp);
 

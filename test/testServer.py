@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 
-from socket import *
+from locust import HttpLocust,TaskSet,task
 
-HOST='localhost'
-PORT=8080
-BUFSIZE=1024
-ADDR=(HOST, PORT)
+class WebsiteTasks(TaskSet):
+    def on_start(self):
+        self.client.post("/login",{"username":"test_user","password":""})
 
-c_sock=socket(AF_INET, SOCK_STREAM)
-c_sock.connect(ADDR)
+    @task
+    def index(self):
+        self.client.get("/")
 
-data=c_sock.recv(BUFSIZE)
 
-print data
-
-c_sock.close()
+class WebsiteUser(HttpLocust):
+        task_set = WebsiteTasks
+        min_wait = 5000
+        max_wait = 15000

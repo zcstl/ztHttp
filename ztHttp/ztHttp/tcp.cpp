@@ -12,6 +12,23 @@
 
 #include "tcp.h"
 
+#include <stdio.h>
+#include <unistd.h>
+#include <ctype.h>
+#include <strings.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <pthread.h>
+#include <sys/wait.h>
+#include <stdlib.h>
+
+#define ISspace(x) isspace((int)(x))
+
+#define SERVER_STRING "Server: jdbhttpd/0.1.0\r\n"
+#define STDIN   0
+#define STDOUT  1
+#define STDERR  2
+
 
 namespace ztHttp {
 
@@ -106,7 +123,7 @@ TcpSocket::TcpSocket(in_port_t port): _isServer(false), _port(port),
 */
 
 TcpSocket::TcpSocket(in_port_t fd_connected_sock): _fd_sock(fd_connected_sock),
-    _isServer(true), _maxRecvSize(1024), _maxSendSize(1024), _isConnected(true) {
+    _isServer(true), _maxRecvSize(1024), _maxSendSize(1024), _isConnected(true), _status(TCP_NOMAL) {
 
     pthread_mutex_init(&_mtx, 0);
     socklen_t sl = sizeof(s_addr);
@@ -116,6 +133,8 @@ TcpSocket::TcpSocket(in_port_t fd_connected_sock): _fd_sock(fd_connected_sock),
     }
 
     _port = s_addr.sin_port;
+
+    _p_http = new Http();
 
 }
 
@@ -144,6 +163,9 @@ ssize_t TcpSocket::write(IOBufferAbstractClass* chunk) {
 
     if(_sendCall)
         _sendBuffer.append(_sendCall(&_sendBuffer));//隐式转换
+    _sendCall = nullptr;
+
+    _p_http->write(&_sendBuffer);
 
     int sz = _maxSendSize<_sendBuffer.size()?_maxSendSize:_sendBuffer.size();
 
@@ -163,8 +185,9 @@ ssize_t TcpSocket::write(IOBufferAbstractClass* chunk) {
 
         if(_sendBuffer.consume(siz)) {
 
-            return siz;
-
+            if(!_sendBuffer.size())
+                shutdown(_fd_sock, SHUT_WR), _status &= TCP_WR_CLOSED;
+                    return siz;
         } else {
 
             LOG(ERROR)<<"TcpSocket::write(): consume";
@@ -173,8 +196,13 @@ ssize_t TcpSocket::write(IOBufferAbstractClass* chunk) {
 
     }
 
-    return 0;
+    /*
+        短链接，若sendbuffer为空，则关闭读端
+    */
+    if(!_sendBuffer.size())
+        shutdown(_fd_sock, SHUT_WR), _status &= TCP_WR_CLOSED;
 
+    return 0;
 }
 
 
@@ -211,11 +239,17 @@ ssize_t TcpSocket::read(IOBufferAbstractClass* p_read_buffer) {
     if(_recvCall)
         _recvCall(&_recvBuffer);
     //
+    _recvCall = nullptr;
+
     if(!p_read_buffer)
         p_read_buffer = &_recvBuffer;
 
-    return siz;
+    if(!_recvBuffer.size())
+        shutdown(_fd_sock, SHUT_WR), _status &= TCP_RD_CLOSED;
 
+    _p_http->read(&_recvBuffer);
+
+    return siz;
 }
 
 bool TcpSocket::setRecvCallBack(RecvCallFunc *recvCall) {
@@ -307,6 +341,222 @@ bool TcpSocket::setDisConnectedCallBack(DisConnCallFunc *disConnCall) {
 }
 
 
+int Http::read(IOBufferAbstractClass* buf) {
+
+    if( typeid(*buf) == typeid(IOBuffer) ) {
+
+        IOBuffer* p_buf = dynamic_cast<IOBuffer*> (buf);
+        char* sta = p_buf->pullDown(p_buf->size());
+        vector<char> tmp(sta, sta + p_buf->size());
+
+        p_buf->consume(p_buf->size());
+
+        _in_buffer.swap(tmp);
+
+    } else {
+
+        cout<<"Http::read: typeid error"<<endl;
+
+    }
+
+    //delete data;
+    //data = nullptr;
+
+    return _in_buffer.size();
+}
+
+int Http::get_line(char* buf, int size) {
+
+    auto iter = _in_buffer.begin();
+    int i = 0;
+    for ( ; iter < _in_buffer.end() && i < size; ++iter) {
+        if (*iter == '\n')
+            break;
+        buf[i] = *iter;
+    }
+    buf[++i] = '\0';
+    return --i;
+}
+
+void Http::unimplemented(IOBufferAbstractClass* buf) {
+
+
+    if( typeid(*buf) == typeid(IOBuffer) ) { //501 METHOD Not Implemented
+
+        IOBuffer* p_buf = dynamic_cast<IOBuffer*> (buf);
+        char msg[] = {"HTTP/1.0 200 OK\r\nServer: jdbhttpd/0.1.0\r\nContent-Type:\
+         text/html\r\n\r\n<HTML><HEAD><TITLE>Method Not Implemented\r\n</TITLE></HEAD>\r\n<BODY>\
+         <P>HTTP request method not supported.\r\n</BODY></HTML>\r\n"};
+        p_buf->append(msg, strlen(msg));
+
+    } else {
+
+        cout<<"sendCallFUnc: typeid error"<<endl;
+
+    }
+
+    //delete data;
+    //data = nullptr;
+}
+
+
+void Http::not_found(IOBufferAbstractClass* buf) {
+
+    if( typeid(*buf) == typeid(IOBuffer) ) {
+
+        IOBuffer* p_buf = dynamic_cast<IOBuffer*> (buf); //404 NOT FOUND
+        char msg[] = {"HTTP/1.0 200 OK\r\nServer: jdbhttpd/0.1.0\r\nContent-Type: text/html\r\n\
+        \r\n<HTML><TITLE>Not Found</TITLE>\r\n<BODY><P>The server could not fulfill\r\n\
+        your request because the resource specified\r\nis unavailable or nonexistent.\r\n</BODY></HTML>\r\n"};
+        p_buf->append(msg, strlen(msg));
+
+    } else {
+
+        cout<<"sendCallFUnc: typeid error"<<endl;
+    }
+}
+
+
+void Http::serve_file(const char *filename, IOBufferAbstractClass* abuf) {
+
+    FILE *resource = NULL;
+    int numchars = 1;
+    char buf[1024];
+
+    buf[0] = 'A'; buf[1] = '\0';
+    while ((numchars > 0) && strcmp("\n", buf))  /* read & discard headers */
+        numchars = get_line(buf, sizeof(buf));
+
+    resource = fopen(filename, "r");
+    if (resource == NULL)
+        not_found(abuf);
+    else
+    {
+        headers(filename, abuf);
+        cat(resource, abuf);
+    }
+    fclose(resource);
+}
+
+void Http::headers(const char *filename, IOBufferAbstractClass* buf) {
+
+    if( typeid(*buf) == typeid(IOBuffer) ) {
+
+        IOBuffer* p_buf = dynamic_cast<IOBuffer*> (buf);
+        char msg[] = {"HTTP/1.0 200 OK\r\nServer: jdbhttpd/0.1.0\r\nContent-Type: text/html\r\n\r\n"};
+        p_buf->append(msg, strlen(msg));
+
+    } else {
+
+        cout<<"sendCallFUnc: typeid error"<<endl;
+    }
+}
+
+void Http::cat(FILE*resource, IOBufferAbstractClass* buf) {
+
+    if( typeid(*buf) == typeid(IOBuffer) ) {
+
+        IOBuffer* p_buf = dynamic_cast<IOBuffer*> (buf);
+
+        char abuf[1024];
+
+        fgets(abuf, sizeof(abuf), resource);
+
+        while (!feof(resource)) {
+            p_buf->append(abuf, strlen(abuf));
+            fgets(abuf, sizeof(buf), resource);
+        }
+
+    } else {
+
+        cout<<"sendCallFUnc: typeid error"<<endl;
+    }
+
+}
+
+int Http::write(IOBufferAbstractClass* abuf) {
+
+    //int client = *(int*)arg;
+    char buf[1024];
+    size_t numchars;
+    char method[255];
+    char url[255];
+    char path[512];
+    size_t i, j;
+    struct stat st;
+    int cgi = 0;      /* becomes true if server decides this is a CGI
+                       * program */
+    char *query_string = NULL;
+
+    numchars = get_line(buf, sizeof(buf));
+    i = 0; j = 0;
+    while (!ISspace(buf[i]) && (i < sizeof(method) - 1))
+    {
+        method[i] = buf[i];
+        i++;
+    }
+
+    //
+    j=i;
+    method[i] = '\0';
+
+    if (strcasecmp(method, "GET") && strcasecmp(method, "POST"))
+    {
+        unimplemented(abuf);
+        return -1;
+    }
+
+    if (strcasecmp(method, "POST") == 0)
+        cgi = 1;
+
+    i = 0;
+    while (ISspace(buf[j]) && (j < numchars))
+        j++;
+    while (!ISspace(buf[j]) && (i < sizeof(url) - 1) && (j < numchars))
+    {
+        url[i] = buf[j];
+        i++; j++;
+    }
+    url[i] = '\0';
+
+    if (strcasecmp(method, "GET") == 0)
+    {
+        query_string = url;
+        while ((*query_string != '?') && (*query_string != '\0'))
+            query_string++;
+        if (*query_string == '?')
+        {
+            cgi = 1;
+            *query_string = '\0';
+            query_string++;
+        }
+    }
+    //
+    sprintf(path, "htdocs%s", url);
+    if (path[strlen(path) - 1] == '/')
+        strcat(path, "index.html");
+    if (stat(path, &st) == -1) {
+        while ((numchars > 0) && strcmp("\n", buf))  /* read & discard headers */
+            numchars = get_line(buf, sizeof(buf));
+        not_found(abuf);
+    }
+    else
+    {
+        if ((st.st_mode & S_IFMT) == S_IFDIR)
+            strcat(path, "/index.html");
+        if ((st.st_mode & S_IXUSR) ||
+                (st.st_mode & S_IXGRP) ||
+                (st.st_mode & S_IXOTH)    )
+            cgi = 1;
+        if (!cgi)
+            serve_file(path, abuf);
+        else
+            //execute_cgi(client, path, method, query_string);
+            serve_file(path, abuf);
+    }
+
+    return 1;
+}
 
 }
 
