@@ -125,13 +125,26 @@ int start_up(in_port_t &port){
 		LOG(ERROR)<<"start_up: socket()";
 
 	struct sockaddr_in s_name;
-	s_name.sin_family=AF_INET;
-	s_name.sin_port=htons(port);
-	s_name.sin_addr.s_addr=htonl(INADDR_ANY);//INADDR_ANY,htons,htonl,ip32bit
+    //INADDR_ANY,htons,htonl,ip32bit
+	if(port) {
+        s_name.sin_port=htons(port);
+        s_name.sin_family=AF_INET;
+        s_name.sin_addr.s_addr=htonl(INADDR_ANY);
+        if(bind(s_sock, (struct sockaddr*)&s_name, sizeof(s_name))==-1)
+            LOG(ERROR)<<"start_up bind()";
+    }
+        //return 0, -1
+	if(listen(s_sock, BACKLOG))
+		LOG(ERROR)<<"start_up: listen()";
 
-	if(bind(s_sock, (struct sockaddr*)&s_name, sizeof(s_name))==-1)
-		LOG(ERROR)<<"start_up bind()";
-
+	//update port with the port which is dynamically allocated
+    if(!port) {
+        socklen_t s_name_len=0;
+        //return 0, -1;    not static_cast!!
+        if(getsockname(s_sock, reinterpret_cast<struct sockaddr* >(&s_name), &s_name_len))
+            LOG(ERROR)<<"start_up: getsockname()";
+        port=ntohs(s_name.sin_port);
+    }
     //port reuse
 	char opt=1, *p_opt=&opt;
 	//retunr 0, -1
@@ -142,19 +155,6 @@ int start_up(in_port_t &port){
     bool isKa=true, *p_isKa=&isKa;
 	if(setsockopt(s_sock, SOL_SOCKET, SO_KEEPALIVE, p_isKa, sizeof(isKa)))
         LOG(INFO)<<"start_up: setsockopt(), SO_KEEPALIVE not set!";
-
-	//update port with the port which is dynamically allocated
-    if(!port) {
-        socklen_t s_name_len=0;
-        //return 0, -1;    not static_cast!!
-        if(getsockname(s_sock, reinterpret_cast<struct sockaddr* >(&s_name), &s_name_len))
-            LOG(ERROR)<<"start_up: getsockname()";
-        port=ntohs(s_name.sin_port);
-    }
-
-    //return 0, -1
-	if(listen(s_sock, BACKLOG))
-		LOG(ERROR)<<"start_up: listen()";
 
 	return s_sock;
 
@@ -172,11 +172,14 @@ int start_server(int argc, char* argv[]){
 
     int err=0;
 
-    //signal
     sigemptyset(&mask);
     sigaddset(&mask, SIGINT);
     sigaddset(&mask, SIGUSR1);
     sigaddset(&mask, SIGUSR2);
+
+    pthread_create(&signal_handle_thread, nullptr, signal_handle, nullptr);
+    //signal
+
     z_signal(SIGINT, sig_tran);
     z_signal(SIGUSR1, sig_tran);
     z_signal(SIGUSR2, sig_tran);
@@ -185,7 +188,7 @@ int start_server(int argc, char* argv[]){
     //    LOG(FATAL)<<"start_up: pthread_sigmask(), error";
 
     //signal handle pthread
-    pthread_create(&signal_handle_thread, nullptr, signal_handle, nullptr);
+
 
     //不同linux版本，signal的实现不同，故使用sigaction
     //z_signal(SIGUSR1, sig_usr1);
@@ -193,8 +196,8 @@ int start_server(int argc, char* argv[]){
     int s_sock=-1, c_sock=-1;//0应该有用
 	//in_port_t s_port=8080;
     //0: dynamically allocate
-	in_port_t s_port=8080;
-	s_sock=start_up(s_port);
+	in_port_t s_port=0;
+	s_sock=start_up(s_port);cout<<s_port<<endl;
 
 	//the number of threads, reactor; one reactor per thread
 	short _count=2;

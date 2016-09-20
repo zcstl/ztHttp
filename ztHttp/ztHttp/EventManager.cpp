@@ -115,8 +115,9 @@ int EpollMultiplexer::handle_events() {
         p_handler->handle_event();
 
     }
-
+    pthread_mutex_lock(&_mtx);
     rdy.erase(rdy.begin(), rdy.end());
+    pthread_mutex_unlock(&_mtx);
     //for(auto tmp: rdy)
     //    cout<<" EpollMultiplexer::handle_events: test iserase:"
     //    <<tmp.first<<endl;
@@ -139,12 +140,21 @@ int EpollMultiplexer::register_handler(EventHandlerAbstractClass* p_handler) {
         LOG(INFO)<<"EpollMultiplexer::register_handler(): dynamic_cast false!";
         return -1;
     }
-
+    //应根据是否找到fd，进而EPOLL_CTL_ADD或者APOLL_CTL_MOD;
+    bool isAdd = false;
     pthread_mutex_lock(&_mtx);
-    _fds[p_evhandler->getFd()]=make_pair(p_evhandler->getEvents(), p_evhandler);
+
+    if(_fds.find(p_evhandler->getFd()) == _fds.end())
+        isAdd = true;
+    _fds[p_evhandler->getFd()] =
+        make_pair(p_evhandler->getEvents(), p_evhandler);
+
     pthread_mutex_unlock(&_mtx);
 
-    epollUpdate(p_evhandler->getFd(), EPOLL_CTL_ADD);
+    if(isAdd)
+        epollUpdate(p_evhandler->getFd(), EPOLL_CTL_ADD);
+    else
+        epollUpdate(p_evhandler->getFd(), EPOLL_CTL_MOD);
 
     return 0;
 
